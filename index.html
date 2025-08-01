@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>간단한 GIF 변환기</title>
+    <script src="https://unpkg.com/@ffmpeg/core-st@0.12.6/dist/umd/ffmpeg-core.js"></script>
     <style>
         /* 'Paperlogy-8ExtraBold' 웹폰트 정의 */
         @font-face {
@@ -221,91 +222,6 @@
             vertical-align: middle;
         }
     </style>
-    
-    <script>
-    !function(e,t){"object"==typeof exports&&"undefined"!=typeof module?t(exports):"function"==typeof define&&define.amd?define(["exports"],t):t((e="undefined"!=typeof globalThis?globalThis:e||self).FFmpeg=e.FFmpeg||{})}(this,(function(e){"use strict";const t={corePath:"https://cdn.jsdelivr.net/npm/@ffmpeg/core@0.12.10/dist/umd/ffmpeg-core.js"},n=e=>{for(let t=0;t<e.length;t+=1)if("string"==typeof e[t]&&e[t].startsWith("-")){const n=e[t].replace(/^-/,"");if("undefined"!=typeof r[n]){const o=r[n],i=e.slice(t+1,t+1+o);return[n,...i]}}return[]},r={i:1,ss:1,to:1,f:1,vf:1},o=(e,t)=>e.reduce(((e,n)=>e+("string"==typeof n&&n.includes(" ")?`"${n}"`:n)+t),"").trimEnd(),i=(e,t)=>{const{args:n,out:r,err:o,exit:i}=((e,t)=>{const n="string"==typeof e?e.split(" "):e,r=t=>e=>e.endsWith(t),o=r(" > /dev/null"),i=r(" 2> /dev/null"),s=r(" &> /dev/null"),a=e=>t.find(o(e)),c=e=>e.filter((e=>!o(t.map((t=>t.split(" ")[0])))(e))).filter((e=>"2>"!==e&&"&>"!==e&&">"!==e&&"/dev/null"!==e)),l=e.join(" "),u=s(l),d=i(l),f=o(l);return{args:c(n),out:u||f,err:u||d,exit:a(["exit"])}})(e,["exit"]);let s,a,c;const l=n(e);return l.length>0&&([s,a,c]=l),{...t,args:n,ffmpegArgs:e,out:r,err:o,exit:i,input:a,output:c,cmd:s}},s=async e=>new Promise(((t,n)=>{const r=new FileReader;r.onload=e=>{const{target:n}=e;n&&"string"!=typeof n.result&&t(n.result)},r.onerror=e=>{const{target:t}=e;n(Error(`File could not be loaded: ${t&&t.error}`))},r.readAsArrayBuffer(e)})),a=e=>{const t="ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";let n="";for(let r=0;r<e;r+=1)n+=t.charAt(Math.floor(Math.random()*t.length));return n},c=async(e,{signal:t})=>{t&&t.aborted&&(()=>{throw new DOMException("Aborted","AbortError")})();const n=new AbortController,r=null==t?void 0:t.signal;if(r){const e=()=>{n.abort(),r.removeEventListener("abort",e)};r.addEventListener("abort",e)}const o=setTimeout((()=>n.abort()),e);return{signal:n.signal,id:o}},l=e=>new Promise(((t,n)=>{const r=new XMLHttpRequest;r.open("GET",e,!0),r.responseType="arraybuffer",r.onload=()=>{t(new Uint8Array(r.response))},r.onerror=()=>n(`failed to fetch with xhr from ${e}`),r.send()}));var u;!function(e){e.LOAD="load",e.EXEC="exec",e.WRITE_FILE="writeFile",e.READ_FILE="readFile",e.DELETE_FILE="deleteFile",e.RENAME="rename",e.CREATE_DIR="createDir",e.LIST_DIR="listDir",e.DELETE_DIR="deleteDir",e.GET_VERSION="getVersion",e.ERROR="error",e.DOWNLOAD="download",e.PROGRESS="progress",e.LOG="log"}(u||(u={}));const d=e=>{const t={};for(const[n,r]of Object.entries(e))"function"==typeof r&&(t[n]=r);return t},f={...t,thread:!1},p=(e={})=>{const n={...f,...e},r="undefined"!=typeof Worker?new Worker(URL.createObjectURL(new Blob(['importScripts("'+n.corePath+'");\n'+`
-      let ffmpeg;
-
-      const load = ({
-        coreOptions,
-      }) => {
-        const Module = {
-          ...coreOptions,
-          print: (message) => postMessage({ type: 'log', message }),
-          printErr: (message) => postMessage({ type: 'log', message }),
-          onExit: (code) => {
-            postMessage({ type: 'exit', code });
-          },
-        };
-        ffmpeg = FFmpeg(Module);
-        postMessage({ type: 'load' });
-      };
-
-      const exec = ({ args, timeout }) => {
-        ffmpeg.exec(...args, timeout);
-        postMessage({ type: 'exec' });
-      };
-
-      const writeFile = ({ path, data }) => {
-        ffmpeg.FS.writeFile(path, data);
-        postMessage({ type: 'writeFile' });
-      };
-
-      const readFile = ({ path, encoding }) => {
-        const data = ffmpeg.FS.readFile(path, { encoding });
-        postMessage({ type: 'readFile', data });
-      };
-
-      const deleteFile = ({ path }) => {
-        ffmpeg.FS.unlink(path);
-        postMessage({ type: 'deleteFile' });
-      };
-
-      const rename = ({ oldPath, newPath }) => {
-        ffmpeg.FS.rename(oldPath, newPath);
-        postMessage({ type: 'rename' });
-      }
-
-      const createDir = ({ path }) => {
-        ffmpeg.FS.mkdir(path);
-        postMessage({ type: 'createDir' });
-      };
-
-      const listDir = ({ path }) => {
-        const entries = ffmpeg.FS.readdir(path);
-        postMessage({ type: 'listDir', data: entries });
-      };
-
-      const deleteDir = ({ path }) => {
-        ffmpeg.FS.rmdir(path);
-        postMessage({ type: 'deleteDir' });
-      };
-
-      const getVersion = () => {
-        const version = ffmpeg.version;
-        postMessage({ type: 'getVersion', data: version });
-      }
-
-      onmessage = ({ data: { type, ...data } }) => {
-        const fn = {
-          load,
-          exec,
-          writeFile,
-          readFile,
-          deleteFile,
-          rename,
-          createDir,
-          listDir,
-          deleteDir,
-          getVersion,
-        }[type];
-        if (fn) {
-          fn(data);
-        }
-      };
-      `
-      ],{type:"text/javascript"}))):null,o=new Map,s=new Map,l=e=>("function"==typeof n.logger&&n.logger(e),s.forEach(((t,n)=>n.startsWith(e.type)&&t(e)))),p=({data:e})=>{switch(e.type){case"load":o.forEach(((e,t)=>"load"===t&&e())),o.delete("load");break;case"exec":case"writeFile":case"readFile":case"deleteFile":case"rename":case"createDir":case"listDir":case"deleteDir":case"getVersion":o.forEach(((t,n)=>n.startsWith(e.type)&&(t(e),o.delete(n))));break;case"exit":l({type:"exit",data:e.code});break;case"log":l(e);break;case"progress":l(e);break;case"error":o.forEach(((t,n)=>n.startsWith(e.type)&&(t(e),o.delete(n))))}},h={};if(r)r.onmessage=p;else{h={isLoaded:!1,on:()=>{},off:()=>{},load:async()=>{console.log("not supported")},exec:async()=>{console.log("not supported")},run:async()=>{console.log("not supported")},writeFile:async()=>{console.log("not supported")},readFile:async()=>{console.log("not supported")},deleteFile:async()=>{console.log("not supported")},rename:async()=>{console.log("not supported")},createDir:async()=>{console.log("not supported")},listDir:async()=>{console.log("not supported")},deleteDir:async()=>{console.log("not supported")},terminate:()=>{console.log("not supported")}};for(const[t,n]of Object.entries(d({FS:{}})))h[t]=n}const g=async(e,t,n={})=>new Promise(((i,s)=>{const c=a(12),l=`${t}:${c}`;o.set(l,i),null==r||r.postMessage({type:t,key:l,log:n.log,options:n.options,...e})})),m=async(e,t,n={})=>new Promise(((i,s)=>{if(!r)return;const l=a(12),u=`${t}:${l}`,f=({type:n,data:r})=>{n.startsWith("error")?s(r):i(r)};o.set(u,f),r.postMessage({type:t,key:u,log:n.log,options:n.options,...e})})),y={get version(){return m({},"getVersion")},isLoaded:()=>"undefined"!=typeof r&&!o.has("load"),on:(e,t)=>{s.set(`${e}:${a(12)}`,t)},off:(e,t)=>{const n=s.entries();for(const[r]of n)r.endsWith(t)&&s.delete(r)},load:async()=>{const e=d(n.coreOptions);await g({coreOptions:e},"load")},exec:async(e,t)=>{const n="string"==typeof e?e.split(" "):e;await m({args:n,timeout:t},"exec")},run:async(...e)=>{const t=i({},e);await y.exec(t.ffmpegArgs)},writeFile:async(e,t)=>{const n=new Uint8Array(await(t instanceof Blob?s(t):t));await m({path:e,data:n},"writeFile")},readFile:async(e,t="binary")=>m({path:e,encoding:t},"readFile"),deleteFile:async e=>m({path:e},"deleteFile"),rename:async(e,t)=>m({path:e,newPath:t},"rename"),createDir:async e=>m({path:e},"createDir"),listDir:async e=>m({path:e},"listDir"),deleteDir:async e=>m({path:e},"deleteDir"),terminate:()=>{null==r||r.terminate()}};return{...h,...y,FS:d(null==r?void 0:r.FS)}},h={...t},g=(e={})=>{const n=new AbortController,r={...h,...e,coreOptions:{...h.coreOptions,...e.coreOptions}};let o;const i=async()=>{var e,t;if(o)return o;const i=null==r?void 0:null===(e=r.coreOptions)||void 0===e?void 0:e.corePath,s=null!==(t=null==r?void 0:r.log)&&t,a=p({corePath:i,log:s});return await a.load(),o=a,o};return{load:i,isLoaded:()=>!!o,get loaded(){return!!o},get ffmpeg(){return o},run:async(...e)=>{const t=await i();return await t.run(...e)},writeFile:async(...e)=>{const t=await i();return await t.writeFile(...e)},readFile:async(...e)=>{const t=await i();return await t.readFile(...e)},deleteFile:async(...e)=>{const t=await i();return await t.deleteFile(...e)},rename:async(...e)=>{const t=await i();return await t.rename(...e)},createDir:async(...e)=>{const t=await i();return await t.createDir(...e)},listDir:async(...e)=>{const t=await i();return await t.listDir(...e)},deleteDir:async(...e)=>{const t=await i();return await t.deleteDir(...e)},exit:()=>{var e;null===(e=o)||void 0===e||e.terminate()},on:(...e)=>{var t;null===(t=o)||void 0===t||t.on(...e)},off:(...e)=>{var t;null===(t=o)||void 0===t||t.off(...e)},getSignal:()=>n.signal,setTimeout:async e=>{const t=await c(e,n);return t.signal.aborted},setLogger:e=>{r.logger=e},setLogging:e=>{r.log=e},setProgress:e=>{r.progress=e}}},m=async(e,t="application/octet-stream")=>fetch(e).then((e=>e.blob())).then((e=>new File([e],a(12),{type:t})));e.createFFmpeg=g,e.fetchFile=m,Object.defineProperty(e,"__esModule",{value:!0})}));
-    </script>
 </head>
 <body>
     <div id="gif-converter-container">
@@ -361,14 +277,9 @@
     </div>
 
     <script>
-        const { createFFmpeg } = FFmpeg;
-        // [수정됨] FFmpeg 초기화 시 corePath를 명시적으로 지정
-        const ffmpeg = createFFmpeg({
-            corePath: 'https://cdn.jsdelivr.net/npm/@ffmpeg/core@0.12.10/dist/umd/ffmpeg-core.js',
-            log: true
-        });
+        const { createFFmpeg, fetchFile } = FFmpeg;
+        const ffmpeg = createFFmpeg({ log: true });
         
-        // --- 드래그 앤 드롭 문제 해결: 문서 전체에 대한 기본 동작 방지 ---
         document.addEventListener('dragover', (e) => e.preventDefault());
         document.addEventListener('drop', (e) => e.preventDefault());
         
@@ -385,9 +296,7 @@
         const output = document.getElementById('output');
 
         let videoFile = null;
-        let videoFileArrayBuffer = null;
         
-        // 드롭 존 이벤트 리스너
         dropZone.addEventListener('dragover', (e) => {
             e.preventDefault();
             dropZone.classList.add('dragover');
@@ -414,44 +323,35 @@
             }
 
             videoFile = file;
-            output.textContent = '파일을 읽는 중입니다...';
+            const videoUrl = URL.createObjectURL(videoFile);
+            
+            videoPreview.src = videoUrl;
+            videoPreview.style.display = 'block';
+            gifPreview.style.display = 'none';
+            dropZone.style.display = 'none';
+            fileLabel.innerHTML = `✅ ${file.name}<br>파일 선택됨`;
 
-            // FileReader를 사용하여 파일의 ArrayBuffer를 읽음
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                videoFileArrayBuffer = e.target.result;
-                const videoUrl = URL.createObjectURL(videoFile);
-                
-                videoPreview.src = videoUrl;
-                videoPreview.style.display = 'block';
-                gifPreview.style.display = 'none';
-                dropZone.style.display = 'none';
-                fileLabel.innerHTML = `✅ ${file.name}<br>파일 선택됨`;
-
-                // 영상 메타데이터가 로드되면 UI 업데이트
-                videoPreview.onloadedmetadata = () => {
-                    endTimeInput.value = videoPreview.duration.toFixed(1);
-                    startTimeInput.disabled = false;
-                    endTimeInput.disabled = false;
-                    fpsSelect.disabled = false;
-                    convertBtn.disabled = false;
-                    downloadBtn.disabled = true;
-                    output.textContent = '아래 설정을 조절한 후 변환 시작 버튼을 누르세요.';
-                };
-                videoPreview.onerror = () => {
-                    output.textContent = '동영상 파일을 불러오는 데 실패했습니다.';
-                };
+            videoPreview.onloadedmetadata = () => {
+                endTimeInput.value = videoPreview.duration.toFixed(1);
+                startTimeInput.disabled = false;
+                endTimeInput.disabled = false;
+                fpsSelect.disabled = false;
+                convertBtn.disabled = false;
+                downloadBtn.disabled = true;
+                output.textContent = '아래 설정을 조절한 후 변환 시작 버튼을 누르세요.';
             };
-            reader.readAsArrayBuffer(videoFile);
+            videoPreview.onerror = () => {
+                output.textContent = '동영상 파일을 불러오는 데 실패했습니다.';
+            };
         }
         
         convertBtn.addEventListener('click', async () => {
-            if (!videoFile || !videoFileArrayBuffer) {
+            if (!videoFile) {
                 output.textContent = '변환할 동영상 파일을 먼저 선택해주세요.';
                 return;
             }
 
-            output.textContent = '변환을 시작합니다. 잠시만 기다려주세요... (용량에 따라 시간이 오래 걸릴 수 있습니다)';
+            output.textContent = '변환을 시작합니다. 잠시만 기다려주세요... (페이지가 잠시 멈출 수 있습니다)';
             convertBtn.disabled = true;
             downloadBtn.disabled = true;
             
@@ -468,22 +368,21 @@
 
             try {
                 if (!ffmpeg.isLoaded()) {
-                    output.textContent = 'ffmpeg 모듈을 로딩 중입니다...';
                     await ffmpeg.load();
                 }
-                output.textContent = '파일을 변환기에 쓰는 중입니다...';
-                await ffmpeg.writeFile('input.mp4', new Uint8Array(videoFileArrayBuffer));
+                
+                await ffmpeg.FS('writeFile', videoFile.name, await fetchFile(videoFile));
                 
                 output.textContent = 'GIF로 변환 중...';
                 await ffmpeg.run(
                     '-ss', startTime.toString(),
                     '-to', endTime.toString(),
-                    '-i', 'input.mp4', 
+                    '-i', videoFile.name, 
                     '-vf', `fps=${fps},scale=320:-1:flags=lanczos`,
                     'output.gif'
                 );
 
-                const data = await ffmpeg.readFile('output.gif');
+                const data = await ffmpeg.FS('readFile', 'output.gif');
                 const gifBlob = new Blob([data.buffer], { type: 'image/gif' });
                 const gifUrl = URL.createObjectURL(gifBlob);
 
@@ -495,7 +394,7 @@
                 output.textContent = '변환이 완료되었습니다! 다운로드 버튼을 눌러 저장하세요.';
             } catch (error) {
                 console.error(error);
-                output.textContent = `변환 중 오류가 발생했습니다. 파일을 다시 확인하거나 다른 파일을 사용해 보세요. 오류: ${error.message}`;
+                output.textContent = `변환 중 오류가 발생했습니다: ${error.message}`;
                 convertBtn.disabled = false;
             }
         });
