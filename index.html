@@ -1,207 +1,416 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>간단한 GIF 변환기</title>
-  <style>
-    /* 스타일 생략 (이전 그대로 유지됨) */
-    /* 필요하면 여기에 다시 포함시켜 드릴게요 */
-  </style>
-</head>
-<body>
-  <div id="gif-converter-container">
-    <h1>간단한 GIF 변환기</h1>
-    <h2>Convert your videos to GIF</h2>
-    <div id="drop-zone">
-      <img class="main-icon" src="https://i.postimg.cc/Qd05H1nJ/image-icon.png" alt="Video to GIF Icon"/>
-      <label id="file-label" for="file-input">
-        동영상 파일 선택<br>Select Video files
-        <small>또는 여기에 동영상 드롭 / or drop videos here</small>
-      </label>
-      <input type="file" id="file-input" accept="video/*" />
-    </div>
-
-    <video id="video-preview" controls style="display:none;"></video>
-    <img id="gif-preview" alt="Converted GIF" style="display:none;"/>
-
-    <div class="controls">
-      <div class="control-group">
-        <label for="start-time">시작 시간 (초)</label>
-        <input type="number" id="start-time" value="0" min="0" step="0.1" disabled/>
-      </div>
-      <div class="control-group">
-        <label for="end-time">종료 시간 (초)</label>
-        <input type="number" id="end-time" value="0" min="0" step="0.1" disabled/>
-      </div>
-      <div class="control-group">
-        <label for="fps">초당 프레임 수 (FPS)</label>
-        <select id="fps" disabled>
-          <option value="10">10 FPS (낮음)</option>
-          <option value="15">15 FPS (보통)</option>
-          <option value="20" selected>20 FPS (좋음)</option>
-          <option value="25">25 FPS (높음)</option>
-        </select>
-      </div>
-    </div>
-
-    <div class="buttons-group">
-      <button id="convert-btn" disabled>변환 시작</button>
-      <button id="download-btn" disabled>다운로드</button>
-    </div>
-
-    <div id="output"></div>
-
-    <div class="program-description">
-      <ul>
-        <li>✓ 다양한 동영상 파일을 GIF로 변환합니다.</li>
-        <li>✓ 시작/종료 시간 설정 및 FPS 조절 가능</li>
-        <li>✓ 브라우저에서 직접 실행되어 파일 전송 없음</li>
-        <li>✓ 드래그 앤 드롭 및 클릭 지원</li>
-      </ul>
-    </div>
-  </div>
-
-  <!-- FFmpeg 라이브러리 로드 -->
-  <script src="https://unpkg.com/@ffmpeg/ffmpeg@0.12.4/dist/ffmpeg.min.js"></script>
-
-  <script>
-    const { createFFmpeg, fetchFile } = FFmpeg;
-    const ffmpeg = createFFmpeg({ log: true });
-
-    const dropZone = document.getElementById('drop-zone');
-    const fileInput = document.getElementById('file-input');
-    const fileLabel = document.getElementById('file-label');
-    const videoPreview = document.getElementById('video-preview');
-    const gifPreview = document.getElementById('gif-preview');
-    const startTimeInput = document.getElementById('start-time');
-    const endTimeInput = document.getElementById('end-time');
-    const fpsSelect = document.getElementById('fps');
-    const convertBtn = document.getElementById('convert-btn');
-    const downloadBtn = document.getElementById('download-btn');
-    const output = document.getElementById('output');
-
-    let videoFile = null;
-
-    // 🛡️ body 전체에서 기본 drag 이벤트 막기
-    ['dragover', 'drop'].forEach(event => {
-      document.body.addEventListener(event, (e) => {
-        e.preventDefault();
-        e.stopPropagation();
-      });
-    });
-
-    // ✅ 드롭존 동작 정의
-    dropZone.addEventListener('dragover', (e) => {
-      e.preventDefault();
-      e.stopPropagation();
-      dropZone.classList.add('dragover');
-    });
-
-    dropZone.addEventListener('dragleave', () => {
-      dropZone.classList.remove('dragover');
-    });
-
-    dropZone.addEventListener('drop', (e) => {
-      e.preventDefault();
-      e.stopPropagation();
-      dropZone.classList.remove('dragover');
-      if (e.dataTransfer.files.length > 0) {
-        handleFile(e.dataTransfer.files[0]);
-      }
-    });
-
-    fileInput.addEventListener('change', (e) => {
-      handleFile(e.target.files[0]);
-    });
-
-    function handleFile(file) {
-      if (!file || !file.type.startsWith('video/')) {
-        output.textContent = '동영상 파일만 업로드할 수 있습니다.';
-        return;
-      }
-
-      videoFile = file;
-      const videoUrl = URL.createObjectURL(videoFile);
-      videoPreview.src = videoUrl;
-      videoPreview.style.display = 'block';
-      gifPreview.style.display = 'none';
-      dropZone.style.display = 'none';
-      fileLabel.innerHTML = `✅ ${file.name}<br>파일 선택됨`;
-
-      videoPreview.onloadedmetadata = () => {
-        endTimeInput.value = videoPreview.duration.toFixed(1);
-        startTimeInput.disabled = false;
-        endTimeInput.disabled = false;
-        fpsSelect.disabled = false;
-        convertBtn.disabled = false;
-        downloadBtn.disabled = true;
-        output.textContent = '설정을 조절한 후 변환을 시작하세요.';
-      };
-
-      videoPreview.onerror = () => {
-        output.textContent = '동영상 미리보기에 실패했습니다.';
-      };
-    }
-
-    convertBtn.addEventListener('click', async () => {
-      if (!videoFile) {
-        output.textContent = '파일을 먼저 선택하세요.';
-        return;
-      }
-
-      const startTime = parseFloat(startTimeInput.value);
-      const endTime = parseFloat(endTimeInput.value);
-      const duration = endTime - startTime;
-      const fps = parseInt(fpsSelect.value);
-
-      if (startTime >= endTime || duration <= 0) {
-        output.textContent = '시작 시간이 종료 시간보다 빠르거나 같습니다.';
-        return;
-      }
-
-      convertBtn.disabled = true;
-      output.textContent = '변환 중입니다... 잠시만 기다려주세요.';
-
-      try {
-        if (!ffmpeg.isLoaded()) {
-          await ffmpeg.load();
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>간단한 GIF 변환기</title>
+    <style>
+        /* 'Paperlogy-8ExtraBold' 웹폰트 정의 */
+        @font-face {
+            font-family: 'Paperlogy-8ExtraBold';
+            src: url('https://fastly.jsdelivr.net/gh/projectnoonnu/2408-3@1.0/Paperlogy-8ExtraBold.woff2') format('woff2');
+            font-weight: 800;
+            font-style: normal;
         }
 
-        await ffmpeg.FS('writeFile', videoFile.name, await fetchFile(videoFile));
+        /* 전체 컨테이너의 기본 스타일 */
+        #gif-converter-container {
+            font-family: 'Paperlogy-8ExtraBold', 'Segoe UI', sans-serif;
+            background-color: #f4f4f8;
+            text-align: center;
+            padding: 40px 20px;
+            color: #333;
+            max-width: 600px;
+            margin: 0 auto;
+            border-radius: 15px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.05);
+            box-sizing: border-box;
+        }
 
-        await ffmpeg.run(
-          '-ss', startTime.toString(),
-          '-to', endTime.toString(),
-          '-i', videoFile.name,
-          '-vf', `fps=${fps},scale=320:-1:flags=lanczos`,
-          'output.gif'
-        );
+        /* 컨테이너 내부 요소 스타일링 */
+        #gif-converter-container h1 {
+            font-size: 28px;
+            margin-bottom: 10px;
+            color: #222;
+        }
 
-        const data = await ffmpeg.FS('readFile', 'output.gif');
-        const gifBlob = new Blob([data.buffer], { type: 'image/gif' });
-        const gifUrl = URL.createObjectURL(gifBlob);
+        #gif-converter-container h2 {
+            font-size: 16px;
+            font-weight: normal;
+            color: #777;
+            margin-bottom: 30px;
+        }
 
-        gifPreview.src = gifUrl;
-        gifPreview.style.display = 'block';
-        videoPreview.style.display = 'none';
-        downloadBtn.disabled = false;
-        output.textContent = '변환 완료! 다운로드 버튼을 눌러 저장하세요.';
-      } catch (err) {
-        console.error(err);
-        output.textContent = '변환 중 오류가 발생했습니다.';
-      } finally {
-        convertBtn.disabled = false;
-      }
-    });
+        #gif-converter-container #drop-zone {
+            border: 3px dashed #ccc;
+            border-radius: 15px;
+            padding: 40px 20px 30px;
+            background-color: #fff;
+            max-width: 500px;
+            margin: 0 auto 30px;
+            position: relative;
+            transition: border-color 0.3s ease;
+            box-sizing: border-box;
+        }
 
-    downloadBtn.addEventListener('click', () => {
-      if (!gifPreview.src) return;
-      const link = document.createElement('a');
-      link.href = gifPreview.src;
-      link.download = 'converted.gif';
-      link.click();
-    });
-  </script>
+        #gif-converter-container #drop-zone.dragover {
+            border-color: #f44336;
+            background-color: #fff7f7;
+        }
+        
+        #gif-converter-container .main-icon {
+            width: 80px;
+            height: auto;
+            margin-bottom: 20px;
+            vertical-align: middle;
+            filter: drop-shadow(2px 4px 6px rgba(0,0,0,0.1));
+            display: block;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        #gif-converter-container #file-input {
+            display: none;
+        }
+
+        #gif-converter-container #file-label {
+            background-color: #d32f2f;
+            color: white;
+            padding: 16px 30px;
+            border-radius: 10px;
+            cursor: pointer;
+            display: inline-block;
+            font-size: 16px;
+            transition: background-color 0.3s ease;
+            margin-bottom: 10px;
+        }
+
+        #gif-converter-container #file-label:hover {
+            background-color: #b71c1c;
+        }
+
+        #gif-converter-container #file-label small {
+            font-size: 12px;
+            display: block;
+            margin-top: 5px;
+            line-height: 1.2;
+        }
+
+        #gif-converter-container #video-preview {
+            max-width: 100%;
+            height: auto;
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+            display: none;
+            margin: 0 auto 20px;
+        }
+        
+        #gif-converter-container #gif-preview {
+            max-width: 100%;
+            height: auto;
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+            margin: 20px auto;
+            display: none;
+        }
+
+        #gif-converter-container .controls {
+            margin-top: 20px;
+            text-align: left;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            max-width: 400px;
+            margin: 20px auto;
+        }
+        
+        #gif-converter-container .control-group {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        #gif-converter-container .control-group label {
+            flex-grow: 1;
+            font-size: 16px;
+            color: #555;
+            text-align: left;
+        }
+
+        #gif-converter-container .control-group input,
+        #gif-converter-container .control-group select {
+            width: 150px;
+            padding: 8px;
+            border-radius: 5px;
+            border: 1px solid #ccc;
+            font-family: inherit;
+        }
+
+        #gif-converter-container .buttons-group {
+            display: flex;
+            justify-content: center;
+            margin-top: 20px;
+            gap: 10px;
+        }
+
+        #gif-converter-container .buttons-group button {
+            font-family: 'Paperlogy-8ExtraBold', sans-serif;
+            padding: 12px 24px;
+            border: none;
+            border-radius: 5px;
+            color: white;
+            cursor: pointer;
+            font-size: 16px;
+            transition: background-color 0.3s ease;
+            flex-grow: 1;
+            max-width: 200px;
+        }
+
+        #gif-converter-container .buttons-group button:disabled {
+            background-color: #aaa;
+            cursor: not-allowed;
+        }
+        
+        #gif-converter-container #convert-btn {
+            background-color: #f9a825;
+        }
+        #gif-converter-container #convert-btn:hover:enabled {
+            background-color: #f57f17;
+        }
+        
+        #gif-converter-container #download-btn {
+            background-color: #28a745;
+        }
+        #gif-converter-container #download-btn:hover:enabled {
+            background-color: #1e7e34;
+        }
+
+        #gif-converter-container #output {
+            margin-top: 30px;
+            font-size: 16px;
+            color: #777;
+        }
+        
+        #gif-converter-container .program-description {
+            margin-top: 40px;
+            padding-top: 20px;
+            border-top: 1px solid #eee;
+            text-align: left;
+            font-size: 15px;
+            line-height: 1.6;
+            color: #555;
+        }
+
+        #gif-converter-container .program-description ul {
+            list-style: none !important;
+            padding-left: 0;
+            font-family: 'Paperlogy-8ExtraBold', 'Segoe UI', sans-serif;
+        }
+
+        #gif-converter-container .program-description ul li {
+            margin-bottom: 10px;
+            position: relative;
+            padding-left: 0;
+            font-family: 'Paperlogy-8ExtraBold', 'Segoe UI', sans-serif;
+        }
+
+        #gif-converter-container .program-description ul li .check-icon {
+            color: #4CAF50;
+            margin-right: 8px;
+            font-size: 1.2em;
+            vertical-align: middle;
+        }
+    </style>
+</head>
+<body>
+    <div id="gif-converter-container">
+        <h1>간단한 GIF 변환기</h1>
+        <h2 data-ke-size="size26">Convert your videos to GIF</h2>
+        <div id="drop-zone">
+            <img class="main-icon" src="https://i.postimg.cc/Qd05H1nJ/image-icon.png" alt="Video to GIF Icon" />
+            <label id="file-label" for="file-input">
+                동영상 파일 선택<br>Select Video files
+                <small>또는 여기에 동영상 드롭 / or drop videos here</small>
+            </label>
+            <input type="file" id="file-input" accept="video/*">
+        </div>
+
+        <video id="video-preview" controls></video>
+        <img id="gif-preview" alt="Converted GIF">
+
+        <div class="controls">
+            <div class="control-group">
+                <label for="start-time">시작 시간 (초)</label>
+                <input type="number" id="start-time" value="0" min="0" step="0.1" disabled>
+            </div>
+            <div class="control-group">
+                <label for="end-time">종료 시간 (초)</label>
+                <input type="number" id="end-time" value="0" min="0" step="0.1" disabled>
+            </div>
+            <div class="control-group">
+                <label for="fps">초당 프레임 수 (FPS)</label>
+                <select id="fps" disabled>
+                    <option value="10">10 FPS (낮음)</option>
+                    <option value="15">15 FPS (보통)</option>
+                    <option value="20" selected>20 FPS (좋음)</option>
+                    <option value="25">25 FPS (높음)</option>
+                </select>
+            </div>
+        </div>
+
+        <div class="buttons-group">
+            <button id="convert-btn" disabled>변환 시작</button>
+            <button id="download-btn" disabled>다운로드</button>
+        </div>
+
+        <div id="output"></div>
+        
+        <div class="program-description">
+            <ul data-ke-list-type="disc">
+                <li><span class="check-icon">✓</span> <strong>동영상 to GIF:</strong> MP4, WEBM 등 다양한 동영상 파일을 GIF로 변환합니다.</li>
+                <li><span class="check-icon">✓</span> <strong>구간 및 품질 설정:</strong> 변환할 동영상의 특정 구간을 설정하고, GIF의 부드러움(FPS)을 조절할 수 있습니다.</li>
+                <li><span class="check-icon">✓</span> <strong>빠르고 안전한 변환:</strong> 모든 작업이 브라우저에서 이루어져 서버로 파일이 전송되지 않습니다.</li>
+                <li><span class="check-icon">✓</span> <strong>간편한 사용법:</strong> 클릭 또는 드래그 앤 드롭만으로 쉽게 GIF를 만들 수 있습니다.</li>
+            </ul>
+        </div>
+    </div>
+    
+    <script>
+    var FFmpeg;!function(e){"use strict";var t,r,n,o,a,i,s,c,l,d,u,f,p,g,h,v,b,y,E,x,w,C,S,R,k,L,A,F,M,D,T,O,P,_,I,N,U,q,B,j,z,H,W,G,V,K,J,Y,X,Z,Q,$,ee,te,re,ne,oe,ae,ie,se,ce,le,de,ue,fe,pe,ge,he,ve,be,ye,Ee,xe,we,Ce,Se,Re,ke,Le,Ae,Fe,Me,De,Te,Oe,Pe,_e,Ie,Ne,Ue,qe,Be,je,ze,He,We,Ge,Ve,Ke,Je,Ye,Xe,Ze,Qe,$e,et,tt,rt,nt,ot,at,it,st,ct,lt,dt,ut,ft,pt,gt,ht,vt,bt,yt,Et,xt,wt,Ct,St,Rt,kt,Lt,At,Ft,Mt,Dt,Tt,Ot,Pt,_t,It,Nt,Ut,qt,Bt,jt,zt,Ht,Wt,Gt,Vt,Kt,Jt,Yt,Xt,Zt,Qt,$t,er,tr,rr,nr,or,ar,ir,sr,cr,lr,dr,ur,fr,pr,gr,hr,vr,br,yr,Er,xr,wr,Cr,Sr,Rr,kr,Lr,Ar,Fr,Mr,Dr,Tr,Or,Pr,_r,Ir,Nr,Ur,qr,Br,jr,zr,Hr,Wr,Gr,Vr,Kr,Jr,Yr,Xr,Zr,Qr,$r,en,tn,rn,nn,on,an,sn,cn,ln,dn,un,fn,pn,gn,hn,vn,bn,yn,En,xn,wn,Cn,Sn,Rn,kn,Ln,An,Fn,Mn,Dn,Tn,On,Pn,_n,In,Nn,Un,qn,Bn,jn,zn,Hn,Wn,Gn,Vn,Kn,Jn,Yn,Xn,Zn,Qn,$n,es,ts,rs,ns,os,as,is,ss,cs,ls,ds,us,fs,ps,gs,hs,vs,bs,ys,Es,xs,ws,Cs,Ss,Rs,ks,Ls,As,Fs,Ms,Ds,Ts,Os,Ps,_s,Is,Ns,Us,qs,Bs,js,zs,Hs,Ws,Gs,Vs,Ks,Js,Ys,Xs,Zs,Qs,$s,ea,ta,ra,na,oa,aa,ia,sa,ca,la,da,ua,fa,pa,ga,ha,va,ba,ya,Ea,xa,wa,Ca,Sa,Ra,ka,La,Aa,Fa,Ma,Da,Ta,Oa,Pa,_a,Ia,Na,Ua,qa,Ba,ja,za,Ha,Wa,Ga,Va,Ka,Ja,Ya,Xa,Za,Qa,$a,ei,ti,ri,ni,oi,ai,ii,si,ci,li,di,ui,fi,pi,gi,hi,vi,bi,yi,Ei,xi,wi,Ci,Si,Ri,ki,Li,Ai,Fi,Mi,Di,Ti,Oi,Pi,_i,Ii,Ni,Ui,qi,Bi,ji,zi,Hi,Wi,Gi,Vi,Ki,Ji,Yi,Xi,Zi,Qi,$i,esl,tsl,rsl,nsl,osl,asl,isl,ssl,csl,lsl,dsl,usl,fsl,psl,gsl,hsl,vsl,bsl,ysl,Esl,xsl,wsl,Csl,Ssl,Rsl,ksl,Lsl,Asl,Fsl,Msl,Dsl,Tsl,Osl,Psl,_sl,Isl,Nsl,Usl,qsl,Bsl,jsl,zsl,Hsl,Wsl,Gsl,Vsl,Ksl,Jsl,Ysl,Xsl,Zsl,Qsl,$sl,eTl,tTl,rTl,nTl,oTl,aTl,iTl,sTl,cTl,lTl,dTl,uTl,fTl,pTl,gTl,hTl,vTl,bTl,yTl,ETl,xTl,wTl,CTl,STl,RTl,kTl,LTl,ATl,FTl,MTl,DTl,TTl,OTl,PTl,_Tl,ITl,NTl,UTl,qTl,BTl,jTl,zTl,HTl,WTl,GTl,VTl,KTl,JTl,YTl,XTl,ZTl,QTl,$Tl,eOl,tOl,rOl,nOl,oOl,aOl,iOl,sOl,cOl,lOl,dOl,uOl,fOl,pOl,gOl,hOl,vOl,bOl,yOl,EOl,xOl,wOl,COl,SOl,ROl,kOl,LOl,AOl,FOl,MOl,DOl,TOl,OOl,POl,_Ol,IOl,NOl,UOl,qOl,BOl,jOl,zOl,HOl,WOl,GOl,VOl,KOl,JOl,YOl,XOl,ZOl,QOl,$Ol,ePl,tPl,rPl,nPl,oPl,aPl,iPl,sPl,cPl,lPl,dPl,uPl,fPl,pPl,gPl,hPl,vPl,bPl,yPl,EPl,xPl,wPl,CPl,SPl,RPl,kPl,LPl,APl,FPl,MPl,DPl,TPl,OPl,PPl,_Pl,IPl,NPl,UPl,qPl,BPl,jPl,zPl,HPl,WPl,GPl,VPl,KPl,JPl,YPl,XPl,ZPl,QPl,$Pl,e_l,t_l,r_l,n_l,o_l,a_l,i_l,s_l,c_l,l_l,d_l,u_l,f_l,p_l,g_l,h_l,v_l,b_l,y_l,E_l,x_l,w_l,C_l,S_l,R_l,k_l,L_l,A_l,F_l,M_l,D_l,T_l,O_l,P_l,__l,I_l,N_l,U_l,q_l,B_l,j_l,z_l,H_l,W_l,G_l,V_l,K_l,J_l,Y_l,X_l,Z_l,Q_l,$_l,eIl,tIl,rIl,nIl,oIl,aIl,iIl,sIl,cIl,lIl,dIl,uIl,fIl,pIl,gIl,hIl,vIl,bIl,yIl,EIl,xIl,wIl,CIl,SIl,RIl,kIl,LIl,AIl,FIl,MIl,DIl,TIl,OIl,PIl,_Il,IIl,NIl,UIl,qIl,BIl,jIl,zIl,HIl,WIl,GIl,VIl,KIl,JIl,YIl,XIl,ZIl,QIl,$Il,eNl,tNl,rNl,nNl,oNl,aNl,iNl,sNl,cNl,lNl,dNl,uNl,fNl,pNl,gNl,hNl,vNl,bNl,yNl,ENl,xNl,wNl,CNl,SNl,RNl,kNl,LNl,ANl,FNl,MNl,DNl,TNl,ONl,PNl,_Nl,INl,NNl,UNl,qNl,BNl,jNl,zNl,HNl,WNl,GNl,VNl,KNl,JNl,YNl,XNl,ZNl,QNl,$Nl,eUl,tUl,rUl,nUl,oUl,aUl,iUl,sUl,cUl,lUl,dUl,uUl,fUl,pUl,gUl,hUl,vUl,bUl,yUl,EUl,xUl,wUl,CUl,SUl,RUl,kUl,LUl,AUl,FUl,MUl,DUl,TUl,OUl,PUl,_Ul,IUl,NUl,UUl,qUl,BUl,jUl,zUl,HUl,WUl,GUl,VUl,KUl,JUl,YUl,XUl,ZUl,QUl,$Ul,eql,tql,rql,nql,oql,aql,iql,sql,cql,lql,dql,uql,fql,pql,gql,hql,vql,bql,yql,Eql,xql,wql,Cql,Sql,Rql,kql,Lql,Aql,Fql,Mql,Dql,Tql,Oql,Pql,_ql,Iql,Nql,Uql,qql,Bql,jql,zql,Hql,Wql,Gql,Vql,Kql,Jql,Yql,Xql,Zql,Qql,$ql,eBl,tBl,rBl,nBl,oBl,aBl,iBl,sBl,cBl,lBl,dBl,uBl,fBl,pBl,gBl,hBl,vBl,bBl,yBl,EBl,xBl,wBl,CBl,SBl,RBl,kBl,LBl,ABl,FBl,MBl,DBl,TBl,OBl,PBl,_Bl,IBl,NBl,UBl,qBl,BBl,jBl,zBl,HBl,WBl,GBl,VBl,KBl,JBl,YBl,XBl,ZBl,QBl,$Bl,ejl,tjl,rjl,njl,ojl,ajl,ijl,sjl,cjl,ljl,djl,ujl,fjl,pjl,gjl,hjl,vjl,bjl,yjl,Ejl,xjl,wjl,Cjl,Sjl,Rjl,kjl,Ljl,Ajl,Fjl,Mjl,Djl,Tjl,Ojl,Pjl,_jl,Ijl,Njl,Ujl,qjl,Bjl,jjl,zjl,Hjl,Wjl,Gjl,Vjl,Kjl,Jjl,Yjl,Xjl,Zjl,Qjl,$jl,ezl,tzl,rzl,nzl,ozl,azl,izl,szl,czl,lzl,dzl,uzl,fzl,pzl,gzl,hzl,vzl,bzl,yzl,Ezl,xzl,wzl,Czl,Szl,Rzl,kzl,Lzl,Azl,Fzl,Mzl,Dzl,Tzl,Ozl,Pzl,_zl,Izl,Nzl,Uzl,qzl,Bzl,jzl,zzl,Hzl,Wzl,Gzl,Vzl,Kzl,Jzl,Yzl,Xzl,Zzl,Qzl,$zl,eHl,tHl,rHl,nHl,oHl,aHl,iHl,sHl,cHl,lHl,dHl,uHl,fHl,pHl,gHl,hHl,vHl,bHl,yHl,EHl,xHl,wHl,CHl,SHl,RHl,kHl,LHl,AHl,FHl,MHl,DHl,THl,OHl,PHl,_Hl,IHl,NHl,UHl,qHl,BHl,jHl,zHl,HHl,WHl,GHl,VHl,KHl,JHl,YHl,XHl,ZHl,QHl,$Hl;e.createFFmpeg=function(e){const t=new o(e);return i.set(e,t),t},e.fetchFile=async function(e){let t=e;return"string"==typeof e&&(t=await fetch(e).then((e=>e.blob()))),n(t)},a=new WeakMap,i=new WeakMap,s="undefined"!=typeof window?window.navigator.userAgent.indexOf("Edge")>-1:null,c="undefined"!=typeof window?window.navigator.userAgent.indexOf("SAB")>-1:null;class l{constructor(e){a.set(this,{resolves:{},rejects:{},_get:""===e.key?"FFmpeg":e.key,get:e=>a.get(this)[e],set:(e,t)=>{a.get(this)[e]=t}})}on(e,t){const r=a.get(this).get(e);a.get(this).set(e,null==r?t:r.then((e=>t)))}emit(e,t){a.get(this).get(e)(t)}resolve(e,t){a.get(this).get("resolves")[e](t),a.get(this).set("resolves",{})}reject(e,t){a.get(this).get("rejects")[e](t),a.get(this).set("rejects",{})}}r="undefined"!=typeof SharedArrayBuffer,o=class extends l{constructor(e){super(e);const t={};for(const e in this)t[e]=this[e];i.set(e,t),a.get(this).set("worker",new Worker(e.workerPath)),a.get(this).get("worker").onmessage=this.onmessage}onmessage({data:{type:e,data:t}}){this.emit(e,t)}on(e,t){const r=a.get(this)._get;super.on(e,("progress"===r||"log"===r?t:async e=>(a.get(this).get(e),t(e))))}load({corePath:e,wasmPath:t,workerPath:r,...n}){const o=a.get(this).get("worker");return new Promise((r,i)=>{this.on("load",r),this.on("error",i),o.postMessage({type:"load",data:{corePath:e,wasmPath:t,...n}})})}run(...e){const t=a.get(this).get("worker");return new Promise((r,n)=>{this.on("run",r),this.on("error",n),t.postMessage({type:"run",data:{args:e}}),i.get(this).emit("run")})}FS(e,t,r){const n=a.get(this).get("worker");return new Promise((o,a)=>{const i={data:r,method:e,path:t};this.on("fs",o),this.on("error",a),n.postMessage({type:"fs",data:i},[r.buffer])})}terminate(){const e=a.get(this).get("worker");e.terminate(),a.get(this).set("worker",new Worker(a.get(this).get("workerPath")))}};class d extends l{constructor(e){super(e);const t={};for(const e in this)t[e]=this[e];i.set(e,t),a.get(this).set("loaded",!1)}onmessage(e){const{type:t,data:r}=e;("done"===t||"readFile"===t)&&this.emit("fs",r),this.emit(t,r)}load({corePath:e,...t}){const r=this;return new Promise((n,o)=>{const i=document.createElement("script");i.src=e,i.async=!0,i.onload=async()=>{const e=a.get(this),o=await self.FFmpeg(t);a.get(this).set("ffmpeg",o),a.get(this).set("loaded",!0),o.setLogger(((e,t)=>{r.onmessage({type:"log",data:{...e,message:t}})})),o.setProgress(((e,t)=>{r.onmessage({type:"progress",data:{...e,progress:t}})})),n(!0)},i.onerror=o,document.body.appendChild(i)})}isLoaded(){return a.get(this).get("loaded")}run(...e){return new Promise((t,r)=>{var n;const o=a.get(this).get("ffmpeg").run(...e);(n=i.get(this))&&n.emit("run"),t(o)})}FS(e,t,r){const n=a.get(this),o=n.get("ffmpeg").FS;let i=null;if("writeFile"===e)i=o.writeFile(t,r);else if("readFile"===e)i=o.readFile(t);else if("unlink"===e)i=o.unlink(t);else if("readdir"===e)i=o.readdir(t);else{if("mkdir"!=e)throw Error("unknown FS method");i=o.mkdir(t)}return new Promise((e=>e(i)))}terminate(){}}e.default=d}(FFmpeg||(FFmpeg={}));
+    </script>
+    <script>
+        const { createFFmpeg, fetchFile } = FFmpeg;
+        const ffmpeg = createFFmpeg({ log: true });
+        
+        document.addEventListener('dragover', (e) => e.preventDefault());
+        document.addEventListener('drop', (e) => e.preventDefault());
+        
+        const dropZone = document.getElementById('drop-zone');
+        const fileInput = document.getElementById('file-input');
+        const fileLabel = document.getElementById('file-label');
+        const videoPreview = document.getElementById('video-preview');
+        const gifPreview = document.getElementById('gif-preview');
+        const startTimeInput = document.getElementById('start-time');
+        const endTimeInput = document.getElementById('end-time');
+        const fpsSelect = document.getElementById('fps');
+        const convertBtn = document.getElementById('convert-btn');
+        const downloadBtn = document.getElementById('download-btn');
+        const output = document.getElementById('output');
+
+        let videoFile = null;
+        
+        dropZone.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            dropZone.classList.add('dragover');
+        });
+
+        dropZone.addEventListener('dragleave', () => {
+            dropZone.classList.remove('dragover');
+        });
+
+        dropZone.addEventListener('drop', (e) => {
+            e.preventDefault(); 
+            dropZone.classList.remove('dragover');
+            handleFile(e.dataTransfer.files[0]);
+        });
+
+        fileInput.addEventListener('change', (e) => {
+            handleFile(e.target.files[0]);
+        });
+        
+        function handleFile(file) {
+            if (!file || !file.type.startsWith('video/')) {
+                output.textContent = '동영상 파일만 업로드할 수 있습니다.';
+                return;
+            }
+
+            videoFile = file;
+            const videoUrl = URL.createObjectURL(videoFile);
+            
+            videoPreview.src = videoUrl;
+            videoPreview.style.display = 'block';
+            gifPreview.style.display = 'none';
+            dropZone.style.display = 'none';
+            fileLabel.innerHTML = `✅ ${file.name}<br>파일 선택됨`;
+
+            videoPreview.onloadedmetadata = () => {
+                endTimeInput.value = videoPreview.duration.toFixed(1);
+                startTimeInput.disabled = false;
+                endTimeInput.disabled = false;
+                fpsSelect.disabled = false;
+                convertBtn.disabled = false;
+                downloadBtn.disabled = true;
+                output.textContent = '아래 설정을 조절한 후 변환 시작 버튼을 누르세요.';
+            };
+            videoPreview.onerror = () => {
+                output.textContent = '동영상 파일을 불러오는 데 실패했습니다.';
+            };
+        }
+        
+        convertBtn.addEventListener('click', async () => {
+            if (!videoFile) {
+                output.textContent = '변환할 동영상 파일을 먼저 선택해주세요.';
+                return;
+            }
+
+            output.textContent = '변환을 시작합니다. 잠시만 기다려주세요... (페이지가 잠시 멈출 수 있습니다)';
+            convertBtn.disabled = true;
+            downloadBtn.disabled = true;
+            
+            const startTime = parseFloat(startTimeInput.value);
+            const endTime = parseFloat(endTimeInput.value);
+            const duration = endTime - startTime;
+            const fps = parseInt(fpsSelect.value);
+
+            if (startTime >= endTime || duration <= 0) {
+                output.textContent = '시작 시간이 종료 시간보다 크거나 같을 수 없습니다.';
+                convertBtn.disabled = false;
+                return;
+            }
+
+            try {
+                // '변환 시작' 버튼을 눌렀을 때 엔진 로딩 시작
+                if (!ffmpeg.isLoaded()) {
+                    output.textContent = '변환 엔진을 로딩 중입니다...';
+                    await ffmpeg.load();
+                }
+                
+                await ffmpeg.FS('writeFile', videoFile.name, await fetchFile(videoFile));
+                
+                output.textContent = 'GIF로 변환 중...';
+                await ffmpeg.run(
+                    '-ss', startTime.toString(),
+                    '-to', endTime.toString(),
+                    '-i', videoFile.name, 
+                    '-vf', `fps=${fps},scale=320:-1:flags=lanczos`,
+                    'output.gif'
+                );
+
+                const data = await ffmpeg.FS('readFile', 'output.gif');
+                const gifBlob = new Blob([data.buffer], { type: 'image/gif' });
+                const gifUrl = URL.createObjectURL(gifBlob);
+
+                gifPreview.src = gifUrl;
+                gifPreview.style.display = 'block';
+                videoPreview.style.display = 'none';
+                downloadBtn.disabled = false;
+                convertBtn.disabled = false;
+                output.textContent = '변환이 완료되었습니다! 다운로드 버튼을 눌러 저장하세요.';
+            } catch (error) {
+                console.error(error);
+                output.textContent = `변환 중 오류가 발생했습니다: ${error.message}`;
+                convertBtn.disabled = false;
+            }
+        });
+
+        downloadBtn.addEventListener('click', () => {
+            if (!gifPreview.src) return;
+
+            const link = document.createElement('a');
+            link.href = gifPreview.src;
+            link.download = `converted.gif`;
+            link.click();
+        });
+    </script>
 </body>
 </html>
