@@ -1,0 +1,509 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>간단한 GIF 변환기</title>
+    <style>
+        /* 'Paperlogy-8ExtraBold' 웹폰트 정의 */
+        @font-face {
+            font-family: 'Paperlogy-8ExtraBold';
+            src: url('https://fastly.jsdelivr.net/gh/projectnoonnu/2408-3@1.0/Paperlogy-8ExtraBold.woff2') format('woff2');
+            font-weight: 800;
+            font-style: normal;
+        }
+
+        /* 전체 컨테이너의 기본 스타일 */
+        #gif-converter-container {
+            font-family: 'Paperlogy-8ExtraBold', 'Segoe UI', sans-serif;
+            background-color: #f4f4f8;
+            text-align: center;
+            padding: 40px 20px;
+            color: #333;
+            max-width: 600px;
+            margin: 0 auto;
+            border-radius: 15px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.05);
+            box-sizing: border-box;
+        }
+
+        /* 컨테이너 내부 요소 스타일링 */
+        #gif-converter-container h1 {
+            font-size: 28px;
+            margin-bottom: 10px;
+            color: #222;
+        }
+
+        #gif-converter-container h2 {
+            font-size: 16px;
+            font-weight: normal;
+            color: #777;
+            margin-bottom: 30px;
+        }
+
+        #gif-converter-container #drop-zone {
+            border: 3px dashed #ccc;
+            border-radius: 15px;
+            padding: 40px 20px 30px;
+            background-color: #fff;
+            max-width: 500px;
+            margin: 0 auto 30px;
+            position: relative;
+            transition: border-color 0.3s ease;
+            box-sizing: border-box;
+        }
+
+        #gif-converter-container #drop-zone.dragover {
+            border-color: #f44336;
+            background-color: #fff7f7;
+        }
+        
+        #gif-converter-container .main-icon {
+            width: 80px;
+            height: auto;
+            margin-bottom: 20px;
+            vertical-align: middle;
+            filter: drop-shadow(2px 4px 6px rgba(0,0,0,0.1));
+            display: block;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        #gif-converter-container #file-input {
+            display: none;
+        }
+
+        #gif-converter-container #file-label {
+            background-color: #d32f2f;
+            color: white;
+            padding: 16px 30px;
+            border-radius: 10px;
+            cursor: pointer;
+            display: inline-block;
+            font-size: 16px;
+            transition: background-color 0.3s ease;
+            margin-bottom: 10px;
+        }
+
+        #gif-converter-container #file-label:hover {
+            background-color: #b71c1c;
+        }
+
+        #gif-converter-container #file-label small {
+            font-size: 12px;
+            display: block;
+            margin-top: 5px;
+            line-height: 1.2;
+        }
+
+        #gif-converter-container #video-preview {
+            max-width: 100%;
+            height: auto;
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+            display: none;
+            margin: 0 auto 20px;
+        }
+        
+        #gif-converter-container #gif-preview {
+            max-width: 100%;
+            height: auto;
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+            margin: 20px auto;
+            display: none;
+        }
+
+        #gif-converter-container .controls {
+            margin-top: 20px;
+            text-align: left;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            max-width: 400px;
+            margin: 20px auto;
+        }
+        
+        #gif-converter-container .control-group {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        #gif-converter-container .control-group label {
+            flex-grow: 1;
+            font-size: 16px;
+            color: #555;
+            text-align: left;
+        }
+
+        #gif-converter-container .control-group input,
+        #gif-converter-container .control-group select {
+            width: 150px;
+            padding: 8px;
+            border-radius: 5px;
+            border: 1px solid #ccc;
+            font-family: inherit;
+        }
+
+        #gif-converter-container .buttons-group {
+            display: flex;
+            justify-content: center;
+            margin-top: 20px;
+            gap: 10px;
+        }
+
+        #gif-converter-container .buttons-group button {
+            font-family: 'Paperlogy-8ExtraBold', sans-serif;
+            padding: 12px 24px;
+            border: none;
+            border-radius: 5px;
+            color: white;
+            cursor: pointer;
+            font-size: 16px;
+            transition: background-color 0.3s ease;
+            flex-grow: 1;
+            max-width: 200px;
+        }
+
+        #gif-converter-container .buttons-group button:disabled {
+            background-color: #aaa;
+            cursor: not-allowed;
+        }
+        
+        #gif-converter-container #convert-btn {
+            background-color: #f9a825;
+        }
+        #gif-converter-container #convert-btn:hover:enabled {
+            background-color: #f57f17;
+        }
+        
+        #gif-converter-container #download-btn {
+            background-color: #28a745;
+        }
+        #gif-converter-container #download-btn:hover:enabled {
+            background-color: #1e7e34;
+        }
+
+        #gif-converter-container #output {
+            margin-top: 30px;
+            font-size: 16px;
+            color: #777;
+        }
+        
+        #gif-converter-container .program-description {
+            margin-top: 40px;
+            padding-top: 20px;
+            border-top: 1px solid #eee;
+            text-align: left;
+            font-size: 15px;
+            line-height: 1.6;
+            color: #555;
+        }
+
+        #gif-converter-container .program-description ul {
+            list-style: none !important;
+            padding-left: 0;
+            font-family: 'Paperlogy-8ExtraBold', 'Segoe UI', sans-serif;
+        }
+
+        #gif-converter-container .program-description ul li {
+            margin-bottom: 10px;
+            position: relative;
+            padding-left: 0;
+            font-family: 'Paperlogy-8ExtraBold', 'Segoe UI', sans-serif;
+        }
+
+        #gif-converter-container .program-description ul li .check-icon {
+            color: #4CAF50;
+            margin-right: 8px;
+            font-size: 1.2em;
+            vertical-align: middle;
+        }
+    </style>
+    
+    <script>
+    !function(e,t){"object"==typeof exports&&"undefined"!=typeof module?t(exports):"function"==typeof define&&define.amd?define(["exports"],t):t((e="undefined"!=typeof globalThis?globalThis:e||self).FFmpeg=e.FFmpeg||{})}(this,(function(e){"use strict";const t={corePath:"https://cdn.jsdelivr.net/npm/@ffmpeg/core@0.12.6/dist/umd/ffmpeg-core.js"},n=e=>{for(let t=0;t<e.length;t+=1)if("string"==typeof e[t]&&e[t].startsWith("-")){const n=e[t].replace(/^-/,"");if("undefined"!=typeof r[n]){const o=r[n],i=e.slice(t+1,t+1+o);return[n,...i]}}return[]},r={i:1,ss:1,to:1,f:1,vf:1},o=(e,t)=>e.reduce(((e,n)=>e+("string"==typeof n&&n.includes(" ")?`"${n}"`:n)+t),"").trimEnd(),i=(e,t)=>{const{args:n,out:r,err:o,exit:i}=((e,t)=>{const n="string"==typeof e?e.split(" "):e,r=t=>e=>e.endsWith(t),o=r(" > /dev/null"),i=r(" 2> /dev/null"),s=r(" &> /dev/null"),a=e=>t.find(o(e)),c=e=>e.filter((e=>!o(t.map((t=>t.split(" ")[0])))(e))).filter((e=>"2>"!==e&&"&>"!==e&&">"!==e&&"/dev/null"!==e)),l=e.join(" "),u=s(l),d=i(l),f=o(l);return{args:c(n),out:u||f,err:u||d,exit:a(["exit"])}})(e,["exit"]);let s,a,c;const l=n(e);return l.length>0&&([s,a,c]=l),{...t,args:n,ffmpegArgs:e,out:r,err:o,exit:i,input:a,output:c,cmd:s}},s=async e=>new Promise(((t,n)=>{const r=new FileReader;r.onload=e=>{const{target:n}=e;n&&"string"!=typeof n.result&&t(n.result)},r.onerror=e=>{const{target:t}=e;n(Error(`File could not be loaded: ${t&&t.error}`))},r.readAsArrayBuffer(e)})),a=e=>{const t="ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";let n="";for(let r=0;r<e;r+=1)n+=t.charAt(Math.floor(Math.random()*t.length));return n},c=async(e,{signal:t})=>{t&&t.aborted&&(()=>{throw new DOMException("Aborted","AbortError")})();const n=new AbortController,r=null==t?void 0:t.signal;if(r){const e=()=>{n.abort(),r.removeEventListener("abort",e)};r.addEventListener("abort",e)}const o=setTimeout((()=>n.abort()),e);return{signal:n.signal,id:o}},l=e=>new Promise(((t,n)=>{const r=new XMLHttpRequest;r.open("GET",e,!0),r.responseType="arraybuffer",r.onload=()=>{t(new Uint8Array(r.response))},r.onerror=()=>n(`failed to fetch with xhr from ${e}`),r.send()}));var u;!function(e){e.LOAD="load",e.EXEC="exec",e.WRITE_FILE="writeFile",e.READ_FILE="readFile",e.DELETE_FILE="deleteFile",e.RENAME="rename",e.CREATE_DIR="createDir",e.LIST_DIR="listDir",e.DELETE_DIR="deleteDir",e.GET_VERSION="getVersion",e.ERROR="error",e.DOWNLOAD="download",e.PROGRESS="progress",e.LOG="log"}(u||(u={}));const d=e=>{const t={};for(const[n,r]of Object.entries(e))"function"==typeof r&&(t[n]=r);return t},f={...t,thread:!1},p=(e={})=>{const n={...f,...e},r="undefined"!=typeof Worker?new Worker(URL.createObjectURL(new Blob(['importScripts("'+n.corePath+'");\n'+`
+      let ffmpeg;
+
+      const load = ({
+        coreOptions,
+      }) => {
+        const Module = {
+          ...coreOptions,
+          print: (message) => postMessage({ type: 'log', message }),
+          printErr: (message) => postMessage({ type: 'log', message }),
+          onExit: (code) => {
+            postMessage({ type: 'exit', code });
+          },
+        };
+        ffmpeg = FFmpeg(Module);
+        postMessage({ type: 'load' });
+      };
+
+      const exec = ({ args, timeout }) => {
+        ffmpeg.exec(...args, timeout);
+        postMessage({ type: 'exec' });
+      };
+
+      const writeFile = ({ path, data }) => {
+        ffmpeg.FS.writeFile(path, data);
+        postMessage({ type: 'writeFile' });
+      };
+
+      const readFile = ({ path, encoding }) => {
+        const data = ffmpeg.FS.readFile(path, { encoding });
+        postMessage({ type: 'readFile', data });
+      };
+
+      const deleteFile = ({ path }) => {
+        ffmpeg.FS.unlink(path);
+        postMessage({ type: 'deleteFile' });
+      };
+
+      const rename = ({ oldPath, newPath }) => {
+        ffmpeg.FS.rename(oldPath, newPath);
+        postMessage({ type: 'rename' });
+      }
+
+      const createDir = ({ path }) => {
+        ffmpeg.FS.mkdir(path);
+        postMessage({ type: 'createDir' });
+      };
+
+      const listDir = ({ path }) => {
+        const entries = ffmpeg.FS.readdir(path);
+        postMessage({ type: 'listDir', data: entries });
+      };
+
+      const deleteDir = ({ path }) => {
+        ffmpeg.FS.rmdir(path);
+        postMessage({ type: 'deleteDir' });
+      };
+
+      const getVersion = () => {
+        const version = ffmpeg.version;
+        postMessage({ type: 'getVersion', data: version });
+      }
+
+      onmessage = ({ data: { type, ...data } }) => {
+        const fn = {
+          load,
+          exec,
+          writeFile,
+          readFile,
+          deleteFile,
+          rename,
+          createDir,
+          listDir,
+          deleteDir,
+          getVersion,
+        }[type];
+        if (fn) {
+          fn(data);
+        }
+      };
+      `
+      ],{type:"text/javascript"}))):null,o=new Map,s=new Map,l=e=>("function"==typeof n.logger&&n.logger(e),s.forEach(((t,n)=>n.startsWith(e.type)&&t(e)))),p=({data:e})=>{switch(e.type){case"load":o.forEach(((e,t)=>"load"===t&&e())),o.delete("load");break;case"exec":case"writeFile":case"readFile":case"deleteFile":case"rename":case"createDir":case"listDir":case"deleteDir":case"getVersion":o.forEach(((t,n)=>n.startsWith(e.type)&&(t(e),o.delete(n))));break;case"exit":l({type:"exit",data:e.code});break;case"log":l(e);break;case"progress":l(e);break;case"error":o.forEach(((t,n)=>n.startsWith(e.type)&&(t(e),o.delete(n))))}},h={};if(r)r.onmessage=p;else{h={isLoaded:!1,on:()=>{},off:()=>{},load:async()=>{console.log("not supported")},exec:async()=>{console.log("not supported")},run:async()=>{console.log("not supported")},writeFile:async()=>{console.log("not supported")},readFile:async()=>{console.log("not supported")},deleteFile:async()=>{console.log("not supported")},rename:async()=>{console.log("not supported")},createDir:async()=>{console.log("not supported")},listDir:async()=>{console.log("not supported")},deleteDir:async()=>{console.log("not supported")},terminate:()=>{console.log("not supported")}};for(const[t,n]of Object.entries(d({FS:{}})))h[t]=n}const g=async(e,t,n={})=>new Promise(((i,s)=>{const c=a(12),l=`${t}:${c}`;o.set(l,i),null==r||r.postMessage({type:t,key:l,log:n.log,options:n.options,...e})})),m=async(e,t,n={})=>new Promise(((i,s)=>{if(!r)return;const l=a(12),u=`${t}:${l}`,f=({type:n,data:r})=>{n.startsWith("error")?s(r):i(r)};o.set(u,f),r.postMessage({type:t,key:u,log:n.log,options:n.options,...e})})),y={get version(){return m({},"getVersion")},isLoaded:()=>"undefined"!=typeof r&&!o.has("load"),on:(e,t)=>{s.set(`${e}:${a(12)}`,t)},off:(e,t)=>{const n=s.entries();for(const[r]of n)r.endsWith(t)&&s.delete(r)},load:async()=>{const e=d(n.coreOptions);await g({coreOptions:e},"load")},exec:async(e,t)=>{const n="string"==typeof e?e.split(" "):e;await m({args:n,timeout:t},"exec")},run:async(...e)=>{const t=i({},e);await y.exec(t.ffmpegArgs)},writeFile:async(e,t)=>{const n=new Uint8Array(await(t instanceof Blob?s(t):t));await m({path:e,data:n},"writeFile")},readFile:async(e,t="binary")=>m({path:e,encoding:t},"readFile"),deleteFile:async e=>m({path:e},"deleteFile"),rename:async(e,t)=>m({path:e,newPath:t},"rename"),createDir:async e=>m({path:e},"createDir"),listDir:async e=>m({path:e},"listDir"),deleteDir:async e=>m({path:e},"deleteDir"),terminate:()=>{null==r||r.terminate()}};return{...h,...y,FS:d(null==r?void 0:r.FS)}},h={...t},g=(e={})=>{const n=new AbortController,r={...h,...e,coreOptions:{...h.coreOptions,...e.coreOptions}};let o;const i=async()=>{var e,t;if(o)return o;const i=null==r?void 0:null===(e=r.coreOptions)||void 0===e?void 0:e.corePath,s=null!==(t=null==r?void 0:r.log)&&t,a=p({corePath:i,log:s});return await a.load(),o=a,o};return{load:i,isLoaded:()=>!!o,get loaded(){return!!o},get ffmpeg(){return o},run:async(...e)=>{const t=await i();return await t.run(...e)},writeFile:async(...e)=>{const t=await i();return await t.writeFile(...e)},readFile:async(...e)=>{const t=await i();return await t.readFile(...e)},deleteFile:async(...e)=>{const t=await i();return await t.deleteFile(...e)},rename:async(...e)=>{const t=await i();return await t.rename(...e)},createDir:async(...e)=>{const t=await i();return await t.createDir(...e)},listDir:async(...e)=>{const t=await i();return await t.listDir(...e)},deleteDir:async(...e)=>{const t=await i();return await t.deleteDir(...e)},exit:()=>{var e;null===(e=o)||void 0===e||e.terminate()},on:(...e)=>{var t;null===(t=o)||void 0===t||t.on(...e)},off:(...e)=>{var t;null===(t=o)||void 0===t||t.off(...e)},getSignal:()=>n.signal,setTimeout:async e=>{const t=await c(e,n);return t.signal.aborted},setLogger:e=>{r.logger=e},setLogging:e=>{r.log=e},setProgress:e=>{r.progress=e}}},m=async(e,t="application/octet-stream")=>fetch(e).then((e=>e.blob())).then((e=>new File([e],a(12),{type:t})));e.createFFmpeg=g,e.fetchFile=m,Object.defineProperty(e,"__esModule",{value:!0})}));
+    </script>
+</head>
+<body>
+    <div id="gif-converter-container">
+        <h1>간단한 GIF 변환기</h1>
+        <h2 data-ke-size="size26">Convert your videos to GIF</h2>
+        <div id="drop-zone">
+            <img class="main-icon" src="https://i.postimg.cc/Qd05H1nJ/image-icon.png" alt="Video to GIF Icon" />
+            <label id="file-label" for="file-input">
+                동영상 파일 선택<br>Select Video files
+                <small>또는 여기에 동영상 드롭 / or drop videos here</small>
+            </label>
+            <input type="file" id="file-input" accept="video/*">
+        </div>
+
+        <video id="video-preview" controls></video>
+        <img id="gif-preview" alt="Converted GIF">
+
+        <div class="controls">
+            <div class="control-group">
+                <label for="start-time">시작 시간 (초)</label>
+                <input type="number" id="start-time" value="0" min="0" step="0.1" disabled>
+            </div>
+            <div class="control-group">
+                <label for="end-time">종료 시간 (초)</label>
+                <input type="number" id="end-time" value="0" min="0" step="0.1" disabled>
+            </div>
+            <div class="control-group">
+                <label for="fps">초당 프레임 수 (FPS)</label>
+                <select id="fps" disabled>
+                    <option value="10">10 FPS (낮음)</option>
+                    <option value="15">15 FPS (보통)</option>
+                    <option value="20" selected>20 FPS (좋음)</option>
+                    <option value="25">25 FPS (높음)</option>
+                </select>
+            </div>
+        </div>
+
+        <div class="buttons-group">
+            <button id="convert-btn" disabled>변환 시작</button>
+            <button id="download-btn" disabled>다운로드</button>
+        </div>
+
+        <div id="output"></div>
+        
+        <div class="program-description">
+            <ul data-ke-list-type="disc">
+                <li><span class="check-icon">✓</span> <strong>동영상 to GIF:</strong> MP4, WEBM 등 다양한 동영상 파일을 GIF로 변환합니다.</li>
+                <li><span class="check-icon">✓</span> <strong>구간 및 품질 설정:</strong> 변환할 동영상의 특정 구간을 설정하고, GIF의 부드러움(FPS)을 조절할 수 있습니다.</li>
+                <li><span class="check-icon">✓</span> <strong>빠르고 안전한 변환:</strong> 모든 작업이 브라우저에서 이루어져 서버로 파일이 전송되지 않습니다.</li>
+                <li><span class="check-icon">✓</span> <strong>간편한 사용법:</strong> 클릭 또는 드래그 앤 드롭만으로 쉽게 GIF를 만들 수 있습니다.</li>
+            </ul>
+        </div>
+    </div>
+
+    <script>
+        const { createFFmpeg } = FFmpeg;
+        const ffmpeg = createFFmpeg({ log: true });
+        
+        // --- 드래그 앤 드롭 문제 해결: 문서 전체에 대한 기본 동작 방지 ---
+        document.addEventListener('dragover', (e) => e.preventDefault());
+        document.addEventListener('drop', (e) => e.preventDefault());
+        
+        const dropZone = document.getElementById('drop-zone');
+        const fileInput = document.getElementById('file-input');
+        const fileLabel = document.getElementById('file-label');
+        const videoPreview = document.getElementById('video-preview');
+        const gifPreview = document.getElementById('gif-preview');
+        const startTimeInput = document.getElementById('start-time');
+        const endTimeInput = document.getElementById('end-time');
+        const fpsSelect = document.getElementById('fps');
+        const convertBtn = document.getElementById('convert-btn');
+        const downloadBtn = document.getElementById('download-btn');
+        const output = document.getElementById('output');
+
+        let videoFile = null;
+        let videoFileArrayBuffer = null;
+        
+        // 드롭 존 이벤트 리스너
+        dropZone.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            dropZone.classList.add('dragover');
+        });
+
+        dropZone.addEventListener('dragleave', () => {
+            dropZone.classList.remove('dragover');
+        });
+
+        dropZone.addEventListener('drop', (e) => {
+            e.preventDefault(); 
+            dropZone.classList.remove('dragover');
+            handleFile(e.dataTransfer.files[0]);
+        });
+
+        fileInput.addEventListener('change', (e) => {
+            handleFile(e.target.files[0]);
+        });
+        
+        function handleFile(file) {
+            if (!file || !file.type.startsWith('video/')) {
+                output.textContent = '동영상 파일만 업로드할 수 있습니다.';
+                return;
+            }
+
+            videoFile = file;
+            output.textContent = '파일을 읽는 중입니다...';
+
+            // FileReader를 사용하여 파일의 ArrayBuffer를 읽음
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                videoFileArrayBuffer = e.target.result;
+                const videoUrl = URL.createObjectURL(videoFile);
+                
+                videoPreview.src = videoUrl;
+                videoPreview.style.display = 'block';
+                gifPreview.style.display = 'none';
+                dropZone.style.display = 'none';
+                fileLabel.innerHTML = `✅ ${file.name}<br>파일 선택됨`;
+
+                // 영상 메타데이터가 로드되면 UI 업데이트
+                videoPreview.onloadedmetadata = () => {
+                    endTimeInput.value = videoPreview.duration.toFixed(1);
+                    startTimeInput.disabled = false;
+                    endTimeInput.disabled = false;
+                    fpsSelect.disabled = false;
+                    convertBtn.disabled = false;
+                    downloadBtn.disabled = true;
+                    output.textContent = '아래 설정을 조절한 후 변환 시작 버튼을 누르세요.';
+                };
+                videoPreview.onerror = () => {
+                    output.textContent = '동영상 파일을 불러오는 데 실패했습니다.';
+                };
+            };
+            reader.readAsArrayBuffer(videoFile);
+        }
+        
+        convertBtn.addEventListener('click', async () => {
+            if (!videoFile || !videoFileArrayBuffer) {
+                output.textContent = '변환할 동영상 파일을 먼저 선택해주세요.';
+                return;
+            }
+
+            output.textContent = '변환을 시작합니다. 잠시만 기다려주세요... (용량에 따라 시간이 오래 걸릴 수 있습니다)';
+            convertBtn.disabled = true;
+            downloadBtn.disabled = true;
+            
+            const startTime = parseFloat(startTimeInput.value);
+            const endTime = parseFloat(endTimeInput.value);
+            const duration = endTime - startTime;
+            const fps = parseInt(fpsSelect.value);
+
+            if (startTime >= endTime || duration <= 0) {
+                output.textContent = '시작 시간이 종료 시간보다 크거나 같을 수 없습니다.';
+                convertBtn.disabled = false;
+                return;
+            }
+
+            try {
+                if (!ffmpeg.isLoaded()) {
+                    output.textContent = 'ffmpeg 모듈을 로딩 중입니다...';
+                    await ffmpeg.load();
+                }
+                output.textContent = '파일을 변환기에 쓰는 중입니다...';
+                ffmpeg.FS('writeFile', 'input.mp4', new Uint8Array(videoFileArrayBuffer));
+                
+                output.textContent = 'GIF로 변환 중...';
+                await ffmpeg.run(
+                    '-ss', startTime.toString(),
+                    '-to', endTime.toString(),
+                    '-i', 'input.mp4', 
+                    '-vf', `fps=${fps},scale=320:-1:flags=lanczos`,
+                    'output.gif'
+                );
+
+                const data = ffmpeg.FS('readFile', 'output.gif');
+                const gifBlob = new Blob([data.buffer], { type: 'image/gif' });
+                const gifUrl = URL.createObjectURL(gifBlob);
+
+                gifPreview.src = gifUrl;
+                gifPreview.style.display = 'block';
+                videoPreview.style.display = 'none';
+                downloadBtn.disabled = false;
+                convertBtn.disabled = false;
+                output.textContent = '변환이 완료되었습니다! 다운로드 버튼을 눌러 저장하세요.';
+            } catch (error) {
+                console.error(error);
+                output.textContent = `변환 중 오류가 발생했습니다. 파일을 다시 확인하거나 다른 파일을 사용해 보세요. 오류: ${error.message}`;
+                convertBtn.disabled = false;
+            }
+        });
+
+        downloadBtn.addEventListener('click', () => {
+            if (!gifPreview.src) return;
+
+            const link = document.createElement('a');
+            link.href = gifPreview.src;
+            link.download = `converted.gif`;
+            link.click();
+        });
+    </script>
+</body>
+</html>
