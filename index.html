@@ -362,7 +362,11 @@
 
     <script>
         const { createFFmpeg } = FFmpeg;
-        const ffmpeg = createFFmpeg({ log: true });
+        // [수정됨] FFmpeg 초기화 시 corePath를 명시적으로 지정
+        const ffmpeg = createFFmpeg({
+            corePath: 'https://cdn.jsdelivr.net/npm/@ffmpeg/core@0.12.10/dist/umd/ffmpeg-core.js',
+            log: true
+        });
         
         // --- 드래그 앤 드롭 문제 해결: 문서 전체에 대한 기본 동작 방지 ---
         document.addEventListener('dragover', (e) => e.preventDefault());
@@ -468,7 +472,7 @@
                     await ffmpeg.load();
                 }
                 output.textContent = '파일을 변환기에 쓰는 중입니다...';
-                ffmpeg.FS('writeFile', 'input.mp4', new Uint8Array(videoFileArrayBuffer));
+                await ffmpeg.writeFile('input.mp4', new Uint8Array(videoFileArrayBuffer));
                 
                 output.textContent = 'GIF로 변환 중...';
                 await ffmpeg.run(
@@ -479,7 +483,7 @@
                     'output.gif'
                 );
 
-                const data = ffmpeg.FS('readFile', 'output.gif');
+                const data = await ffmpeg.readFile('output.gif');
                 const gifBlob = new Blob([data.buffer], { type: 'image/gif' });
                 const gifUrl = URL.createObjectURL(gifBlob);
 
