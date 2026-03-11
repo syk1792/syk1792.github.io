@@ -4,9 +4,9 @@
     <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-1790215424507586" crossorigin="anonymous"></script>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>간단한 GIF 변환기</title>
+    <title>무료 GIF 변환기 - 동영상을 GIF로 간단하게 변환</title>
+    <meta name="description" content="MP4, WEBM 등 동영상을 GIF로 무료 변환. 브라우저에서 바로 사용, 설치 불필요. 구간 설정, FPS 조절 지원.">
     <style>
-        /* 'Paperlogy-8ExtraBold' 웹폰트 정의 */
         @font-face {
             font-family: 'Paperlogy-8ExtraBold';
             src: url('https://fastly.jsdelivr.net/gh/projectnoonnu/2408-3@1.0/Paperlogy-8ExtraBold.woff2') format('woff2');
@@ -14,117 +14,123 @@
             font-style: normal;
         }
 
-        /* 전체 컨테이너의 기본 스타일 */
-        #gif-converter-container {
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
             font-family: 'Paperlogy-8ExtraBold', 'Segoe UI', sans-serif;
-            background-color: #f4f4f8;
-            text-align: center;
-            padding: 40px 20px;
+            background-color: #f0f2f5;
             color: #333;
-            max-width: 600px;
-            margin: 0 auto;
-            border-radius: 15px;
-            box-shadow: 0 4px 8px rgba(0,0,0,0.05);
-            box-sizing: border-box;
         }
 
-        /* 컨테이너 내부 요소 스타일링 */
-        #gif-converter-container h1 {
-            font-size: 28px;
-            margin-bottom: 10px;
-            color: #222;
+        /* 헤더 */
+        .site-header {
+            background: #d32f2f;
+            color: white;
+            padding: 18px 20px;
+            text-align: center;
+        }
+        .site-header h1 {
+            font-size: 22px;
+            font-weight: 900;
+        }
+        .site-header p {
+            font-size: 13px;
+            opacity: 0.85;
+            margin-top: 4px;
+        }
+
+        .page-wrap {
+            max-width: 720px;
+            margin: 0 auto;
+            padding: 24px 16px 60px;
+        }
+
+        /* GIF 변환기 */
+        #gif-converter-container {
+            background-color: #f4f4f8;
+            text-align: center;
+            padding: 32px 20px;
+            color: #333;
+            border-radius: 15px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.08);
         }
 
         #gif-converter-container h2 {
-            font-size: 16px;
-            font-weight: normal;
+            font-size: 24px;
+            margin-bottom: 6px;
+            color: #222;
+        }
+
+        #gif-converter-container .sub {
+            font-size: 14px;
             color: #777;
-            margin-bottom: 30px;
+            margin-bottom: 24px;
         }
 
         #gif-converter-container #drop-zone {
             border: 3px dashed #ccc;
             border-radius: 15px;
-            padding: 40px 20px 30px;
+            padding: 36px 20px 28px;
             background-color: #fff;
             max-width: 500px;
-            margin: 0 auto 30px;
+            margin: 0 auto 24px;
             position: relative;
             transition: border-color 0.3s ease;
-            box-sizing: border-box;
         }
 
         #gif-converter-container #drop-zone.dragover {
             border-color: #f44336;
             background-color: #fff7f7;
         }
-        
+
         #gif-converter-container .main-icon {
-            width: 80px;
+            width: 72px;
             height: auto;
-            margin-bottom: 20px;
-            vertical-align: middle;
-            filter: drop-shadow(2px 4px 6px rgba(0,0,0,0.1));
+            margin: 0 auto 16px;
             display: block;
-            margin-left: auto;
-            margin-right: auto;
+            filter: drop-shadow(2px 4px 6px rgba(0,0,0,0.1));
         }
 
-        #gif-converter-container #file-input {
-            display: none;
-        }
+        #gif-converter-container #file-input { display: none; }
 
         #gif-converter-container #file-label {
             background-color: #d32f2f;
             color: white;
-            padding: 16px 30px;
+            padding: 14px 28px;
             border-radius: 10px;
             cursor: pointer;
             display: inline-block;
-            font-size: 16px;
+            font-size: 15px;
             transition: background-color 0.3s ease;
             margin-bottom: 10px;
         }
 
-        #gif-converter-container #file-label:hover {
-            background-color: #b71c1c;
-        }
-
+        #gif-converter-container #file-label:hover { background-color: #b71c1c; }
         #gif-converter-container #file-label small {
-            font-size: 12px;
+            font-size: 11px;
             display: block;
-            margin-top: 5px;
+            margin-top: 4px;
             line-height: 1.2;
         }
 
-        #gif-converter-container #video-preview {
-            max-width: 100%;
-            height: auto;
-            border-radius: 10px;
-            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
-            display: none;
-            margin: 0 auto 20px;
-        }
-        
+        #gif-converter-container #video-preview,
         #gif-converter-container #gif-preview {
             max-width: 100%;
             height: auto;
             border-radius: 10px;
             box-shadow: 0 4px 8px rgba(0,0,0,0.1);
-            margin: 20px auto;
+            margin: 0 auto 16px;
             display: none;
         }
 
         #gif-converter-container .controls {
-            margin-top: 20px;
-            text-align: left;
             display: flex;
             flex-direction: column;
-            gap: 15px;
+            gap: 12px;
             max-width: 400px;
-            margin: 20px auto;
+            margin: 16px auto;
         }
-        
+
         #gif-converter-container .control-group {
             display: flex;
             align-items: center;
@@ -132,10 +138,10 @@
         }
 
         #gif-converter-container .control-group label {
-            flex-grow: 1;
-            font-size: 16px;
+            font-size: 15px;
             color: #555;
             text-align: left;
+            flex-grow: 1;
         }
 
         #gif-converter-container .control-group input,
@@ -150,7 +156,7 @@
         #gif-converter-container .buttons-group {
             display: flex;
             justify-content: center;
-            margin-top: 20px;
+            margin-top: 16px;
             gap: 10px;
         }
 
@@ -161,7 +167,7 @@
             border-radius: 5px;
             color: white;
             cursor: pointer;
-            font-size: 16px;
+            font-size: 15px;
             transition: background-color 0.3s ease;
             flex-grow: 1;
             max-width: 200px;
@@ -171,62 +177,166 @@
             background-color: #aaa;
             cursor: not-allowed;
         }
-        
-        #gif-converter-container #convert-btn {
-            background-color: #f9a825;
-        }
-        #gif-converter-container #convert-btn:hover:enabled {
-            background-color: #f57f17;
-        }
-        
-        #gif-converter-container #download-btn {
-            background-color: #28a745;
-        }
-        #gif-converter-container #download-btn:hover:enabled {
-            background-color: #1e7e34;
-        }
+
+        #gif-converter-container #convert-btn { background-color: #f9a825; }
+        #gif-converter-container #convert-btn:hover:enabled { background-color: #f57f17; }
+        #gif-converter-container #download-btn { background-color: #28a745; }
+        #gif-converter-container #download-btn:hover:enabled { background-color: #1e7e34; }
 
         #gif-converter-container #output {
-            margin-top: 30px;
-            font-size: 16px;
+            margin-top: 20px;
+            font-size: 15px;
             color: #777;
         }
-        
+
         #gif-converter-container .program-description {
-            margin-top: 40px;
+            margin-top: 32px;
             padding-top: 20px;
             border-top: 1px solid #eee;
             text-align: left;
-            font-size: 15px;
-            line-height: 1.6;
+            font-size: 14px;
+            line-height: 1.7;
             color: #555;
         }
 
         #gif-converter-container .program-description ul {
-            list-style: none !important;
+            list-style: none;
             padding-left: 0;
-            font-family: 'Paperlogy-8ExtraBold', 'Segoe UI', sans-serif;
         }
 
         #gif-converter-container .program-description ul li {
             margin-bottom: 10px;
-            position: relative;
             padding-left: 0;
-            font-family: 'Paperlogy-8ExtraBold', 'Segoe UI', sans-serif;
         }
 
         #gif-converter-container .program-description ul li .check-icon {
             color: #4CAF50;
             margin-right: 8px;
-            font-size: 1.2em;
+            font-size: 1.1em;
             vertical-align: middle;
+        }
+
+        /* 광고 영역 */
+        .ad-wrap {
+            margin: 28px 0;
+            text-align: center;
+        }
+
+        /* 콘텐츠 섹션 */
+        .content-section {
+            background: white;
+            border-radius: 15px;
+            padding: 28px 24px;
+            margin-top: 28px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+            line-height: 1.8;
+        }
+
+        .content-section h2 {
+            font-size: 20px;
+            color: #d32f2f;
+            margin-bottom: 14px;
+            border-left: 4px solid #d32f2f;
+            padding-left: 12px;
+        }
+
+        .content-section h3 {
+            font-size: 17px;
+            color: #333;
+            margin: 20px 0 8px;
+        }
+
+        .content-section p {
+            font-size: 14px;
+            color: #555;
+            margin-bottom: 10px;
+        }
+
+        .content-section ul {
+            list-style: none;
+            padding-left: 0;
+            margin-bottom: 12px;
+        }
+
+        .content-section ul li {
+            font-size: 14px;
+            color: #555;
+            padding: 5px 0;
+            padding-left: 20px;
+            position: relative;
+        }
+
+        .content-section ul li::before {
+            content: "▸";
+            position: absolute;
+            left: 0;
+            color: #d32f2f;
+        }
+
+        .tip-box {
+            background: #fff8f0;
+            border: 1px solid #ffe0b2;
+            border-radius: 10px;
+            padding: 14px 16px;
+            margin: 16px 0;
+            font-size: 14px;
+            color: #555;
+        }
+
+        .tip-box strong {
+            color: #e65100;
+            display: block;
+            margin-bottom: 4px;
+        }
+
+        .faq-item {
+            border-bottom: 1px solid #f0f0f0;
+            padding: 14px 0;
+        }
+
+        .faq-item:last-child { border-bottom: none; }
+
+        .faq-item .q {
+            font-size: 15px;
+            font-weight: 900;
+            color: #333;
+            margin-bottom: 6px;
+        }
+
+        .faq-item .q::before {
+            content: "Q. ";
+            color: #d32f2f;
+        }
+
+        .faq-item .a {
+            font-size: 14px;
+            color: #666;
+            padding-left: 20px;
+        }
+
+        .site-footer {
+            text-align: center;
+            padding: 24px;
+            font-size: 12px;
+            color: #aaa;
+            margin-top: 40px;
         }
     </style>
 </head>
 <body>
+
+<header class="site-header">
+    <h1>🎬 무료 GIF 변환기</h1>
+    <p>동영상을 GIF로 — 브라우저에서 바로, 설치 없이</p>
+</header>
+
+<div class="page-wrap">
+
+    <!-- GIF 변환기 본체 -->
     <div id="gif-converter-container">
-        <h1>간단한 GIF 변환기</h1>
-        <h2 data-ke-size="size26">Convert your videos to GIF</h2>
+        <h2>간단한 GIF 변환기</h2>
+        <p class="sub">Convert your videos to GIF</p>
+
         <div id="drop-zone">
             <img class="main-icon" src="https://i.postimg.cc/Qd05H1nJ/image-icon.png" alt="Video to GIF Icon" />
             <label id="file-label" for="file-input">
@@ -265,9 +375,9 @@
         </div>
 
         <div id="output"></div>
-        
+
         <div class="program-description">
-            <ul data-ke-list-type="disc">
+            <ul>
                 <li><span class="check-icon">✓</span> <strong>동영상 to GIF:</strong> MP4, WEBM 등 다양한 동영상 파일을 GIF로 변환합니다.</li>
                 <li><span class="check-icon">✓</span> <strong>구간 및 품질 설정:</strong> 변환할 동영상의 특정 구간을 설정하고, GIF의 부드러움(FPS)을 조절할 수 있습니다.</li>
                 <li><span class="check-icon">✓</span> <strong>빠르고 안전한 변환:</strong> 모든 작업이 브라우저에서 이루어져 서버로 파일이 전송되지 않습니다.</li>
@@ -276,143 +386,269 @@
         </div>
     </div>
 
-    <script src="https://cdn.jsdelivr.net/npm/@ffmpeg/ffmpeg@0.12.10/dist/umd/ffmpeg.min.js"></script>
-    
-    <script>
-        const { createFFmpeg, fetchFile } = FFmpeg;
-        const ffmpeg = createFFmpeg({ log: true });
-        
-        document.addEventListener('dragover', (e) => e.preventDefault());
-        document.addEventListener('drop', (e) => e.preventDefault());
-        
-        const dropZone = document.getElementById('drop-zone');
-        const fileInput = document.getElementById('file-input');
-        const fileLabel = document.getElementById('file-label');
-        const videoPreview = document.getElementById('video-preview');
-        const gifPreview = document.getElementById('gif-preview');
-        const startTimeInput = document.getElementById('start-time');
-        const endTimeInput = document.getElementById('end-time');
-        const fpsSelect = document.getElementById('fps');
-        const convertBtn = document.getElementById('convert-btn');
-        const downloadBtn = document.getElementById('download-btn');
-        const output = document.getElementById('output');
+    <!-- 광고 -->
+    <div class="ad-wrap">
+        <ins class="adsbygoogle"
+             style="display:block"
+             data-ad-client="ca-pub-1790215424507586"
+             data-ad-slot="1340479668"
+             data-ad-format="auto"
+             data-full-width-responsive="true"></ins>
+        <script>(adsbygoogle = window.adsbygoogle || []).push({});</script>
+    </div>
 
-        let videoFile = null;
-        
-        dropZone.addEventListener('dragover', (e) => {
-            e.preventDefault();
-            dropZone.classList.add('dragover');
-        });
+    <!-- 콘텐츠 1: GIF란? -->
+    <div class="content-section">
+        <h2>GIF란 무엇인가요?</h2>
+        <p>GIF(Graphics Interchange Format)는 1987년에 개발된 이미지 포맷으로, 움직이는 이미지를 표현할 수 있는 대표적인 파일 형식입니다. 영상을 설치 없이 어디서든 재생할 수 있어 SNS, 메신저, 블로그 등에서 널리 사용됩니다.</p>
+        <p>특히 카카오톡, 인스타그램, 트위터(X), 디스코드 등 대부분의 플랫폼에서 GIF를 지원하기 때문에, 짧은 영상 클립을 공유하거나 반응 이모티콘처럼 사용하기에 최적입니다.</p>
 
-        dropZone.addEventListener('dragleave', () => {
-            dropZone.classList.remove('dragover');
-        });
+        <h3>GIF의 주요 특징</h3>
+        <ul>
+            <li>별도의 앱 없이 웹 브라우저와 대부분의 메신저에서 자동 재생</li>
+            <li>무한 반복 재생 설정 가능</li>
+            <li>MP4보다 용량이 크지만 호환성이 뛰어남</li>
+            <li>최대 256색 지원 (사진보다는 간단한 애니메이션에 적합)</li>
+            <li>배경 투명도 적용 가능</li>
+        </ul>
 
-        dropZone.addEventListener('drop', (e) => {
-            e.preventDefault(); 
-            dropZone.classList.remove('dragover');
-            handleFile(e.dataTransfer.files[0]);
-        });
+        <div class="tip-box">
+            <strong>💡 GIF vs MP4, 언제 GIF를 쓸까요?</strong>
+            짧은 클립(5초 이내), 반복 재생이 필요한 경우, 파일을 이미지처럼 첨부해야 하는 경우에는 GIF가 유리합니다. 긴 영상이나 고화질이 필요한 경우에는 MP4를 권장합니다.
+        </div>
+    </div>
 
-        fileInput.addEventListener('change', (e) => {
-            handleFile(e.target.files[0]);
-        });
-        
-        function handleFile(file) {
-            if (!file || !file.type.startsWith('video/')) {
-                output.textContent = '동영상 파일만 업로드할 수 있습니다.';
-                return;
-            }
+    <!-- 콘텐츠 2: 사용법 -->
+    <div class="content-section">
+        <h2>GIF 변환기 사용법</h2>
+        <p>이 도구는 별도의 회원가입이나 설치 없이 브라우저에서 바로 사용할 수 있습니다. 변환 과정이 모두 내 컴퓨터에서 이루어지므로 개인 동영상이 외부 서버로 전송되지 않아 안전합니다.</p>
 
-            videoFile = file;
-            const videoUrl = URL.createObjectURL(videoFile);
-            
-            videoPreview.src = videoUrl;
-            videoPreview.style.display = 'block';
-            gifPreview.style.display = 'none';
-            dropZone.style.display = 'none';
-            fileLabel.innerHTML = `✅ ${file.name}<br>파일 선택됨`;
+        <h3>STEP 1 — 동영상 파일 선택</h3>
+        <p>MP4, WEBM, MOV, AVI 등 대부분의 동영상 형식을 지원합니다. 파일 선택 버튼을 클릭하거나 점선 영역으로 파일을 드래그 앤 드롭하면 됩니다.</p>
 
-            videoPreview.onloadedmetadata = () => {
-                endTimeInput.value = videoPreview.duration.toFixed(1);
-                startTimeInput.disabled = false;
-                endTimeInput.disabled = false;
-                fpsSelect.disabled = false;
-                convertBtn.disabled = false;
-                downloadBtn.disabled = true;
-                output.textContent = '아래 설정을 조절한 후 변환 시작 버튼을 누르세요.';
-            };
-            videoPreview.onerror = () => {
-                output.textContent = '동영상 파일을 불러오는 데 실패했습니다.';
-            };
+        <h3>STEP 2 — 구간 및 품질 설정</h3>
+        <p>변환할 구간의 시작 시간과 종료 시간을 초 단위로 입력합니다. 구간이 짧을수록 GIF 파일 용량이 작아집니다. FPS(초당 프레임 수)는 높을수록 부드럽지만 용량도 커집니다.</p>
+        <ul>
+            <li>10 FPS: 파일 크기 최소화, 약간 끊기는 느낌</li>
+            <li>15 FPS: 일반적인 GIF 품질, 균형 잡힌 선택</li>
+            <li>20 FPS: 부드러운 움직임, 권장 설정</li>
+            <li>25 FPS: 매우 부드럽지만 파일 크기 증가</li>
+        </ul>
+
+        <h3>STEP 3 — 변환 및 다운로드</h3>
+        <p>변환 시작 버튼을 누르면 브라우저 내에서 GIF 변환이 진행됩니다. 처음 실행 시 변환 엔진 로딩에 수십 초가 걸릴 수 있습니다. 완료 후 다운로드 버튼으로 GIF 파일을 저장하세요.</p>
+
+        <div class="tip-box">
+            <strong>⚠️ 변환이 느린 경우</strong>
+            첫 번째 변환 시 엔진 로딩 시간이 필요합니다. 또한 동영상 파일이 클수록 시간이 오래 걸립니다. 5초 이내 구간으로 테스트해보시길 권장합니다.
+        </div>
+    </div>
+
+    <!-- 광고 -->
+    <div class="ad-wrap">
+        <ins class="adsbygoogle"
+             style="display:block"
+             data-ad-client="ca-pub-1790215424507586"
+             data-ad-slot="1340479668"
+             data-ad-format="auto"
+             data-full-width-responsive="true"></ins>
+        <script>(adsbygoogle = window.adsbygoogle || []).push({});</script>
+    </div>
+
+    <!-- 콘텐츠 3: FAQ -->
+    <div class="content-section">
+        <h2>자주 묻는 질문 (FAQ)</h2>
+
+        <div class="faq-item">
+            <div class="q">변환된 GIF 파일은 어디에 저장되나요?</div>
+            <div class="a">다운로드 버튼을 클릭하면 브라우저의 기본 다운로드 폴더에 'converted.gif' 파일로 저장됩니다. 스마트폰의 경우 갤러리 또는 다운로드 폴더에서 확인할 수 있습니다.</div>
+        </div>
+
+        <div class="faq-item">
+            <div class="q">어떤 동영상 형식을 지원하나요?</div>
+            <div class="a">MP4, WEBM, MOV, AVI, MKV 등 대부분의 동영상 형식을 지원합니다. 단, 일부 특수 코덱으로 인코딩된 파일은 변환이 안 될 수 있습니다.</div>
+        </div>
+
+        <div class="faq-item">
+            <div class="q">변환한 GIF가 너무 크거나 화질이 나쁠 때 어떻게 하나요?</div>
+            <div class="a">구간을 더 짧게 설정하거나 FPS를 낮추면 파일 크기가 줄어듭니다. GIF는 특성상 MP4에 비해 용량이 크고 색상이 제한되므로, 5초 이하의 짧은 클립에 최적화되어 있습니다.</div>
+        </div>
+
+        <div class="faq-item">
+            <div class="q">업로드한 동영상이 외부 서버에 저장되나요?</div>
+            <div class="a">아니요. 모든 변환 작업은 사용자의 브라우저(내 기기) 안에서만 이루어집니다. 동영상 파일은 외부 서버로 전송되지 않으므로 개인 동영상도 안심하고 사용할 수 있습니다.</div>
+        </div>
+
+        <div class="faq-item">
+            <div class="q">모바일(스마트폰)에서도 사용할 수 있나요?</div>
+            <div class="a">크롬, 사파리, 엣지 등 최신 모바일 브라우저에서 사용 가능합니다. 단, 변환 처리 능력이 PC보다 낮아 변환 시간이 더 걸릴 수 있습니다.</div>
+        </div>
+
+        <div class="faq-item">
+            <div class="q">변환 중 페이지가 멈추는 것 같아요</div>
+            <div class="a">정상입니다. GIF 변환은 CPU를 많이 사용하는 작업으로, 변환 중에는 브라우저가 일시적으로 느려질 수 있습니다. 변환이 완료되면 정상으로 돌아옵니다.</div>
+        </div>
+    </div>
+
+    <!-- 콘텐츠 4: GIF 활용 팁 -->
+    <div class="content-section">
+        <h2>GIF 활용 팁</h2>
+
+        <h3>SNS & 메신저에서 GIF 활용하기</h3>
+        <p>카카오톡, 인스타그램, 트위터, 텔레그램, 디스코드 등 대부분의 플랫폼에서 GIF를 이미지처럼 첨부할 수 있습니다. 영상을 GIF로 변환하면 공유가 훨씬 쉬워집니다.</p>
+
+        <h3>블로그 & 웹사이트에서 GIF 활용하기</h3>
+        <p>제품 사용법, 앱 튜토리얼, 요리 과정 등을 GIF로 만들어 블로그에 삽입하면 글의 이해도를 높일 수 있습니다. HTML의 img 태그로 동영상처럼 보이는 콘텐츠를 쉽게 삽입할 수 있습니다.</p>
+
+        <h3>프레젠테이션에서 GIF 사용하기</h3>
+        <p>파워포인트(PowerPoint), 키노트(Keynote), 구글 슬라이드에 GIF를 삽입하면 자동 재생되는 움직이는 이미지를 사용할 수 있어 발표 자료를 더 역동적으로 만들 수 있습니다.</p>
+
+        <div class="tip-box">
+            <strong>✅ 좋은 GIF를 만드는 핵심 3가지</strong>
+            ① 구간은 3~5초 이내로 짧게 ② 핵심 동작만 포함되도록 정확히 구간 설정 ③ FPS는 15~20으로 품질과 용량의 균형 유지
+        </div>
+    </div>
+
+</div>
+
+<footer class="site-footer">
+    <p>© 2025 무료 GIF 변환기 | 브라우저에서 바로 사용하는 온라인 GIF 변환 도구</p>
+</footer>
+
+<script src="https://cdn.jsdelivr.net/npm/@ffmpeg/ffmpeg@0.12.10/dist/umd/ffmpeg.min.js"></script>
+
+<script>
+    const { createFFmpeg, fetchFile } = FFmpeg;
+    const ffmpeg = createFFmpeg({ log: true });
+
+    document.addEventListener('dragover', (e) => e.preventDefault());
+    document.addEventListener('drop', (e) => e.preventDefault());
+
+    const dropZone = document.getElementById('drop-zone');
+    const fileInput = document.getElementById('file-input');
+    const fileLabel = document.getElementById('file-label');
+    const videoPreview = document.getElementById('video-preview');
+    const gifPreview = document.getElementById('gif-preview');
+    const startTimeInput = document.getElementById('start-time');
+    const endTimeInput = document.getElementById('end-time');
+    const fpsSelect = document.getElementById('fps');
+    const convertBtn = document.getElementById('convert-btn');
+    const downloadBtn = document.getElementById('download-btn');
+    const output = document.getElementById('output');
+
+    let videoFile = null;
+
+    dropZone.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        dropZone.classList.add('dragover');
+    });
+
+    dropZone.addEventListener('dragleave', () => {
+        dropZone.classList.remove('dragover');
+    });
+
+    dropZone.addEventListener('drop', (e) => {
+        e.preventDefault();
+        dropZone.classList.remove('dragover');
+        handleFile(e.dataTransfer.files[0]);
+    });
+
+    fileInput.addEventListener('change', (e) => {
+        handleFile(e.target.files[0]);
+    });
+
+    function handleFile(file) {
+        if (!file || !file.type.startsWith('video/')) {
+            output.textContent = '동영상 파일만 업로드할 수 있습니다.';
+            return;
         }
-        
-        convertBtn.addEventListener('click', async () => {
-            if (!videoFile) {
-                output.textContent = '변환할 동영상 파일을 먼저 선택해주세요.';
-                return;
-            }
 
-            output.textContent = '변환을 시작합니다. 잠시만 기다려주세요... (페이지가 잠시 멈출 수 있습니다)';
-            convertBtn.disabled = true;
+        videoFile = file;
+        const videoUrl = URL.createObjectURL(videoFile);
+
+        videoPreview.src = videoUrl;
+        videoPreview.style.display = 'block';
+        gifPreview.style.display = 'none';
+        dropZone.style.display = 'none';
+        fileLabel.innerHTML = `✅ ${file.name}<br>파일 선택됨`;
+
+        videoPreview.onloadedmetadata = () => {
+            endTimeInput.value = videoPreview.duration.toFixed(1);
+            startTimeInput.disabled = false;
+            endTimeInput.disabled = false;
+            fpsSelect.disabled = false;
+            convertBtn.disabled = false;
             downloadBtn.disabled = true;
-            
-            const startTime = parseFloat(startTimeInput.value);
-            const endTime = parseFloat(endTimeInput.value);
-            const duration = endTime - startTime;
-            const fps = parseInt(fpsSelect.value);
+            output.textContent = '아래 설정을 조절한 후 변환 시작 버튼을 누르세요.';
+        };
+        videoPreview.onerror = () => {
+            output.textContent = '동영상 파일을 불러오는 데 실패했습니다.';
+        };
+    }
 
-            if (startTime >= endTime || duration <= 0) {
-                output.textContent = '시작 시간이 종료 시간보다 크거나 같을 수 없습니다.';
-                convertBtn.disabled = false;
-                return;
+    convertBtn.addEventListener('click', async () => {
+        if (!videoFile) {
+            output.textContent = '변환할 동영상 파일을 먼저 선택해주세요.';
+            return;
+        }
+
+        output.textContent = '변환을 시작합니다. 잠시만 기다려주세요... (페이지가 잠시 멈출 수 있습니다)';
+        convertBtn.disabled = true;
+        downloadBtn.disabled = true;
+
+        const startTime = parseFloat(startTimeInput.value);
+        const endTime = parseFloat(endTimeInput.value);
+        const duration = endTime - startTime;
+        const fps = parseInt(fpsSelect.value);
+
+        if (startTime >= endTime || duration <= 0) {
+            output.textContent = '시작 시간이 종료 시간보다 크거나 같을 수 없습니다.';
+            convertBtn.disabled = false;
+            return;
+        }
+
+        try {
+            if (!ffmpeg.isLoaded()) {
+                output.textContent = '변환 엔진을 로딩 중입니다...';
+                await ffmpeg.load();
             }
 
-            try {
-                // '변환 시작' 버튼을 눌렀을 때 엔진 로딩 시작
-                if (!ffmpeg.isLoaded()) {
-                    output.textContent = '변환 엔진을 로딩 중입니다...';
-                    await ffmpeg.load();
-                }
-                
-                await ffmpeg.FS('writeFile', videoFile.name, await fetchFile(videoFile));
-                
-                output.textContent = 'GIF로 변환 중...';
-                await ffmpeg.run(
-                    '-ss', startTime.toString(),
-                    '-to', endTime.toString(),
-                    '-i', videoFile.name, 
-                    '-vf', `fps=${fps},scale=320:-1:flags=lanczos`,
-                    'output.gif'
-                );
+            await ffmpeg.FS('writeFile', videoFile.name, await fetchFile(videoFile));
 
-                const data = await ffmpeg.FS('readFile', 'output.gif');
-                const gifBlob = new Blob([data.buffer], { type: 'image/gif' });
-                const gifUrl = URL.createObjectURL(gifBlob);
+            output.textContent = 'GIF로 변환 중...';
+            await ffmpeg.run(
+                '-ss', startTime.toString(),
+                '-to', endTime.toString(),
+                '-i', videoFile.name,
+                '-vf', `fps=${fps},scale=320:-1:flags=lanczos`,
+                'output.gif'
+            );
 
-                gifPreview.src = gifUrl;
-                gifPreview.style.display = 'block';
-                videoPreview.style.display = 'none';
-                downloadBtn.disabled = false;
-                convertBtn.disabled = false;
-                output.textContent = '변환이 완료되었습니다! 다운로드 버튼을 눌러 저장하세요.';
-            } catch (error) {
-                console.error(error);
-                output.textContent = `변환 중 오류가 발생했습니다: ${error.message}`;
-                convertBtn.disabled = false;
-            }
-        });
+            const data = await ffmpeg.FS('readFile', 'output.gif');
+            const gifBlob = new Blob([data.buffer], { type: 'image/gif' });
+            const gifUrl = URL.createObjectURL(gifBlob);
 
-        downloadBtn.addEventListener('click', () => {
-            if (!gifPreview.src) return;
+            gifPreview.src = gifUrl;
+            gifPreview.style.display = 'block';
+            videoPreview.style.display = 'none';
+            downloadBtn.disabled = false;
+            convertBtn.disabled = false;
+            output.textContent = '변환이 완료되었습니다! 다운로드 버튼을 눌러 저장하세요.';
+        } catch (error) {
+            console.error(error);
+            output.textContent = `변환 중 오류가 발생했습니다: ${error.message}`;
+            convertBtn.disabled = false;
+        }
+    });
 
-            const link = document.createElement('a');
-            link.href = gifPreview.src;
-            link.download = `converted.gif`;
-            link.click();
-        });
-    </script>
+    downloadBtn.addEventListener('click', () => {
+        if (!gifPreview.src) return;
+        const link = document.createElement('a');
+        link.href = gifPreview.src;
+        link.download = 'converted.gif';
+        link.click();
+    });
+</script>
+
 </body>
 </html>
-
-
